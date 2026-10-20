@@ -1,0 +1,508 @@
+{
+  "atendentes": [
+    {
+      "id": "at1",
+      "nome": "Paulo",
+      "papel": "atendente"
+    },
+    {
+      "id": "at2",
+      "nome": "Carla",
+      "papel": "atendente"
+    },
+    {
+      "id": "at3",
+      "nome": "Rodrigo",
+      "papel": "atendente"
+    },
+    {
+      "id": "at4",
+      "nome": "Beatriz",
+      "papel": "supervisor"
+    },
+    {
+      "id": "at5",
+      "nome": "Helena",
+      "papel": "diretoria"
+    }
+  ],
+  "estacoes": [
+    {
+      "id": "est01",
+      "nome": "Estação 01",
+      "escala": {
+        "manha": "at1",
+        "tarde": "at2",
+        "noite": "at3"
+      }
+    },
+    {
+      "id": "est02",
+      "nome": "Estação 02",
+      "escala": {
+        "manha": "at2",
+        "tarde": "at3",
+        "noite": "at1"
+      }
+    }
+  ],
+  "contatos": [
+    {
+      "id": "ct1",
+      "nome": "Mariana Souza",
+      "numero": "+55 21 98811-0001",
+      "email": "mariana.souza@email.com",
+      "empresa": null,
+      "observacao": "Cliente pessoa física, 1 veículo"
+    },
+    {
+      "id": "ct2",
+      "nome": "João Pedro",
+      "numero": "+55 21 97722-0002",
+      "email": "joaopedro@email.com",
+      "empresa": null,
+      "observacao": null
+    },
+    {
+      "id": "ct3",
+      "nome": "Transportadora Serra Verde",
+      "numero": "+55 21 96633-0003",
+      "email": "contato@serraverde.com.br",
+      "empresa": "Serra Verde Ltda",
+      "observacao": "Interessada em 12 veículos"
+    },
+    {
+      "id": "ct4",
+      "nome": "Ana Lúcia",
+      "numero": "+55 21 95544-0004",
+      "email": null,
+      "empresa": null,
+      "observacao": null
+    },
+    {
+      "id": "ct5",
+      "nome": "Roberto Faria",
+      "numero": "+55 21 94455-0005",
+      "email": "roberto.faria@email.com",
+      "empresa": "Faria Entregas",
+      "observacao": "Ainda sem conversa"
+    },
+    {
+      "id": "ct6",
+      "nome": "Luciana Prado",
+      "numero": "+55 21 93366-0006",
+      "email": null,
+      "empresa": null,
+      "observacao": "Ainda sem conversa"
+    }
+  ],
+  "etiquetas": [
+    {
+      "id": "novo",
+      "nome": "Novo cliente",
+      "cor": "#3b82f6"
+    },
+    {
+      "id": "orcamento",
+      "nome": "Orçamento",
+      "cor": "#10b981"
+    },
+    {
+      "id": "suporte",
+      "nome": "Suporte técnico",
+      "cor": "#8b5cf6"
+    },
+    {
+      "id": "pagamento",
+      "nome": "Financeiro",
+      "cor": "#f59e0b"
+    },
+    {
+      "id": "urgente",
+      "nome": "Urgente",
+      "cor": "#ef4444"
+    },
+    {
+      "id": "livre1",
+      "nome": "Personalizada 1",
+      "cor": "#ec4899",
+      "editavel": true
+    },
+    {
+      "id": "livre2",
+      "nome": "Personalizada 2",
+      "cor": "#06b6d4",
+      "editavel": true
+    },
+    {
+      "id": "livre3",
+      "nome": "Personalizada 3",
+      "cor": "#84cc16",
+      "editavel": true
+    }
+  ],
+  "respostasRapidas": [
+    {
+      "atalho": "saudacao",
+      "texto": "Olá, {nome}! Aqui é {atendente}, da equipe de monitoramento. Como posso ajudar?"
+    },
+    {
+      "atalho": "placa",
+      "texto": "Pode me informar a placa do veículo, por favor?"
+    },
+    {
+      "atalho": "aguarde",
+      "texto": "Só um momento, {nome}, estou verificando aqui no sistema."
+    },
+    {
+      "atalho": "boleto",
+      "texto": "Enviei a segunda via do boleto para o seu e-mail cadastrado. Qualquer dúvida, é só chamar!"
+    },
+    {
+      "atalho": "horario",
+      "texto": "Nosso monitoramento funciona 24 horas, todos os dias, inclusive feriados."
+    },
+    {
+      "atalho": "encerrar",
+      "texto": "Posso ajudar em mais alguma coisa, {nome}? Se não, vou encerrar o atendimento. Tenha um ótimo dia!"
+    }
+  ],
+  "auditoria": [
+    {
+      "id": "aud1",
+      "tipo": "edicao",
+      "conversaId": "c1",
+      "conversaNome": "Mariana Souza",
+      "mensagemId": "m2",
+      "autorId": "at1",
+      "quando": "2026-10-10T14:06:00",
+      "tipoMensagem": "texto",
+      "antes": "Boa tarde, Mariana! Vou verificar aqui. Qual o modelo do carro?",
+      "depois": "Boa tarde, Mariana! Vou verificar aqui. Qual a placa?"
+    },
+    {
+      "id": "aud2",
+      "tipo": "exclusao",
+      "conversaId": "c2",
+      "conversaNome": "João Pedro",
+      "mensagemId": "m6b",
+      "autorId": "at2",
+      "quando": "2026-10-09T10:25:00",
+      "tipoMensagem": "texto",
+      "antes": "O vencimento do boleto é dia 05."
+    },
+    {
+      "id": "aud3",
+      "tipo": "exclusao",
+      "conversaId": "c4",
+      "conversaNome": "Ana Lúcia",
+      "mensagemId": "m10c",
+      "autorId": "at3",
+      "quando": "2026-10-08T18:49:00",
+      "tipoMensagem": "nota",
+      "antes": "Posso oferecer 20% de desconto se ele fechar até sexta."
+    }
+  ],
+  "conversas": [
+    {
+      "id": "c1",
+      "tipo": "contato",
+      "contatoId": "ct1",
+      "atendenteId": "at1",
+      "marcadaNaoLida": false,
+      "arquivada": false,
+      "status": "aberta",
+      "etiquetas": [
+        "suporte",
+        "urgente"
+      ],
+      "fixadaEm": null,
+      "mensagens": [
+        {
+          "id": "m1",
+          "tipo": "texto",
+          "texto": "Boa tarde! O rastreador do meu carro parou de atualizar.",
+          "horario": "2026-10-10T14:02:00",
+          "direcao": "recebida",
+          "lida": true,
+          "autor": null
+        },
+        {
+          "id": "m2",
+          "tipo": "texto",
+          "texto": "Boa tarde, Mariana! Vou verificar aqui. Qual a placa?",
+          "horario": "2026-10-10T14:05:00",
+          "direcao": "enviada",
+          "lida": true,
+          "autor": "at1",
+          "versoesAnteriores": [
+            "Boa tarde, Mariana! Vou verificar aqui. Qual o modelo do carro?"
+          ],
+          "editadaEm": "2026-10-10T14:06:00"
+        },
+        {
+          "id": "m3",
+          "tipo": "audio",
+          "audioUrl": null,
+          "duracao": 14,
+          "horario": "2026-10-10T14:07:00",
+          "direcao": "recebida",
+          "lida": false,
+          "autor": null
+        },
+        {
+          "id": "m4",
+          "tipo": "texto",
+          "texto": "Consegue ver alguma coisa?",
+          "horario": "2026-10-10T14:20:00",
+          "direcao": "recebida",
+          "lida": false,
+          "autor": null
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "tipo": "contato",
+      "contatoId": "ct2",
+      "atendenteId": "at2",
+      "marcadaNaoLida": false,
+      "arquivada": false,
+      "status": "resolvida",
+      "etiquetas": [
+        "pagamento"
+      ],
+      "fixadaEm": "2026-10-09T11:00:00",
+      "mensagens": [
+        {
+          "id": "m5",
+          "tipo": "texto",
+          "texto": "Preciso da segunda via do boleto.",
+          "horario": "2026-10-09T10:15:00",
+          "direcao": "recebida",
+          "lida": true,
+          "autor": null
+        },
+        {
+          "id": "m5b",
+          "tipo": "sistema",
+          "texto": "Carla assumiu a conversa",
+          "horario": "2026-10-09T10:20:00",
+          "direcao": "interna",
+          "lida": true,
+          "autor": null
+        },
+        {
+          "id": "m6",
+          "tipo": "texto",
+          "texto": "Claro! Enviei no seu e-mail cadastrado.",
+          "horario": "2026-10-09T10:22:00",
+          "direcao": "enviada",
+          "lida": true,
+          "autor": "at2"
+        },
+        {
+          "id": "m6b",
+          "tipo": "texto",
+          "texto": "O vencimento do boleto é dia 05.",
+          "horario": "2026-10-09T10:23:00",
+          "direcao": "enviada",
+          "lida": true,
+          "autor": "at2",
+          "apagada": true,
+          "apagadaPor": "at2",
+          "apagadaEm": "2026-10-09T10:25:00"
+        },
+        {
+          "id": "m7",
+          "tipo": "texto",
+          "texto": "Recebi, obrigado!",
+          "horario": "2026-10-09T10:30:00",
+          "direcao": "recebida",
+          "lida": true,
+          "autor": null
+        },
+        {
+          "id": "m7b",
+          "tipo": "sistema",
+          "texto": "Carla marcou a conversa como resolvida",
+          "horario": "2026-10-09T10:32:00",
+          "direcao": "interna",
+          "lida": true,
+          "autor": null
+        }
+      ]
+    },
+    {
+      "id": "c3",
+      "tipo": "contato",
+      "contatoId": "ct3",
+      "atendenteId": null,
+      "marcadaNaoLida": false,
+      "arquivada": false,
+      "status": "aberta",
+      "etiquetas": [
+        "novo",
+        "orcamento"
+      ],
+      "fixadaEm": null,
+      "mensagens": [
+        {
+          "id": "m8",
+          "tipo": "texto",
+          "texto": "Olá, gostaria de um orçamento para 12 veículos.",
+          "horario": "2026-10-10T16:48:00",
+          "direcao": "recebida",
+          "lida": false,
+          "autor": null
+        }
+      ]
+    },
+    {
+      "id": "c4",
+      "tipo": "contato",
+      "contatoId": "ct4",
+      "atendenteId": "at3",
+      "marcadaNaoLida": true,
+      "arquivada": false,
+      "status": "aberta",
+      "etiquetas": [],
+      "fixadaEm": null,
+      "mensagens": [
+        {
+          "id": "m9",
+          "tipo": "texto",
+          "texto": "Vocês funcionam no feriado?",
+          "horario": "2026-10-08T18:40:00",
+          "direcao": "recebida",
+          "lida": true,
+          "autor": null
+        },
+        {
+          "id": "m10",
+          "tipo": "audio",
+          "audioUrl": null,
+          "duracao": 8,
+          "horario": "2026-10-08T18:45:00",
+          "direcao": "enviada",
+          "lida": true,
+          "autor": "at3"
+        },
+        {
+          "id": "m10c",
+          "tipo": "nota",
+          "texto": "Posso oferecer 20% de desconto se ele fechar até sexta.",
+          "horario": "2026-10-08T18:47:00",
+          "direcao": "interna",
+          "lida": true,
+          "autor": "at3",
+          "apagada": true,
+          "apagadaPor": "at3",
+          "apagadaEm": "2026-10-08T18:49:00"
+        },
+        {
+          "id": "m10b",
+          "tipo": "nota",
+          "texto": "Cliente perguntou sobre o plano anual. Retornar com proposta na segunda.",
+          "horario": "2026-10-08T18:50:00",
+          "direcao": "interna",
+          "lida": true,
+          "autor": "at3"
+        }
+      ]
+    },
+    {
+      "id": "c5",
+      "tipo": "grupo",
+      "nome": "Frota Teresópolis",
+      "participantes": [
+        "Carlos Mendes",
+        "Fernanda Lima",
+        "Bruno Alves"
+      ],
+      "atendenteId": "at1",
+      "marcadaNaoLida": false,
+      "arquivada": false,
+      "status": "aberta",
+      "etiquetas": [
+        "suporte"
+      ],
+      "fixadaEm": null,
+      "mensagens": [
+        {
+          "id": "m11",
+          "tipo": "texto",
+          "texto": "Bom dia, pessoal! O caminhão 07 está sem sinal desde ontem.",
+          "horario": "2026-10-10T08:10:00",
+          "direcao": "recebida",
+          "lida": true,
+          "autor": "Carlos Mendes"
+        },
+        {
+          "id": "m12",
+          "tipo": "texto",
+          "texto": "Bom dia! Já estamos verificando.",
+          "horario": "2026-10-10T08:15:00",
+          "direcao": "enviada",
+          "lida": true,
+          "autor": "at1",
+          "respostaA": "m11"
+        },
+        {
+          "id": "m13",
+          "tipo": "texto",
+          "texto": "Voltou aqui no aplicativo, obrigada!",
+          "horario": "2026-10-10T09:02:00",
+          "direcao": "recebida",
+          "lida": false,
+          "autor": "Fernanda Lima"
+        },
+        {
+          "id": "m14",
+          "tipo": "audio",
+          "audioUrl": null,
+          "duracao": 22,
+          "horario": "2026-10-10T09:05:00",
+          "direcao": "recebida",
+          "lida": false,
+          "autor": "Bruno Alves"
+        }
+      ]
+    },
+    {
+      "id": "c6",
+      "tipo": "grupo",
+      "nome": "Suporte Logística Petrópolis",
+      "participantes": [
+        "Renata Costa",
+        "Marcos Vieira"
+      ],
+      "atendenteId": "at2",
+      "marcadaNaoLida": false,
+      "arquivada": true,
+      "status": "aberta",
+      "etiquetas": [],
+      "fixadaEm": null,
+      "mensagens": [
+        {
+          "id": "m15",
+          "tipo": "texto",
+          "texto": "Conseguem gerar o relatório de rotas da semana?",
+          "horario": "2026-10-09T15:30:00",
+          "direcao": "recebida",
+          "lida": true,
+          "autor": "Renata Costa"
+        },
+        {
+          "id": "m16",
+          "tipo": "texto",
+          "texto": "Gerado e enviado no e-mail do grupo.",
+          "horario": "2026-10-09T16:00:00",
+          "direcao": "enviada",
+          "lida": true,
+          "autor": "at2"
+        }
+      ]
+    }
+  ]
+}

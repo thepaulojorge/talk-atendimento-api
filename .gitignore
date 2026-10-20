@@ -1,0 +1,8 @@
+# Dependências: cada um instala com "npm install"
+node_modules/
+
+# Segredos e configurações locais: NUNCA vão para o GitHub
+.env
+
+# Logs
+npm-debug.log*

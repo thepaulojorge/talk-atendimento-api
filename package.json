@@ -1,0 +1,19 @@
+{
+  "name": "talk-atendimento-api",
+  "version": "0.1.0",
+  "description": "Servidor (API) do Talk Atendimento",
+  "private": true,
+  "type": "module",
+  "main": "src/servidor.js",
+  "scripts": {
+    "dev": "node --watch --env-file=.env src/servidor.js",
+    "start": "node src/servidor.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.3.0"
+  }
+}
