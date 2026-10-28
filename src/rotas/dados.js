@@ -1,21 +1,42 @@
 import { Router } from "express";
-import { readFile } from "node:fs/promises";
+import { prisma } from "../banco.js";
+import { auditoriaParaFront, conversaParaFront, estacaoParaFront } from "../formatos.js";
 
-/* ⚠️ ETAPA B1: os dados ainda vêm de um ARQUIVO (o mesmo dados.json do
-   front). Na etapa B2 eles passam a vir do banco de dados, e esta rota
-   muda por dentro, mas continua respondendo do MESMO jeito. O front nem
-   percebe a troca: é para isso que uma API serve */
+/* GET /api/dados: TUDO o que o front precisa para abrir.
+   Na B1, isto lia um arquivo. Agora lê do BANCO, e o front nem percebe:
+   a resposta continua no mesmo formato (quem traduz é o formatos.js) */
 export const rotasDados = Router();
 
-// O caminho do arquivo a partir DESTE arquivo (funciona de qualquer pasta)
-const ARQUIVO = new URL("../dados/dados.json", import.meta.url);
-
-// GET /api/dados
-/* "async": ler um arquivo leva tempo. Com await, o servidor não fica
-   parado esperando: atende outros pedidos enquanto o disco trabalha.
-   No Express 5, se algo der errado aqui, o erro vai sozinho para o
-   tratamento de erros do app.js (no Express 4 era preciso um try/catch) */
 rotasDados.get("/dados", async (req, res) => {
-  const texto = await readFile(ARQUIVO, "utf-8");
-  res.json(JSON.parse(texto));
+  /* Promise.all: dispara as 8 consultas AO MESMO TEMPO e espera todas.
+     Uma depois da outra, o tempo de cada ida ao banco iria se somando */
+  const [configuracao, atendentes, estacoes, contatos, etiquetas, respostasRapidas, conversas, auditoria] =
+    await Promise.all([
+      prisma.configuracao.findUnique({ where: { id: 1 } }),
+      prisma.atendente.findMany({ orderBy: { id: "asc" } }),
+      prisma.estacao.findMany({ include: { escala: true }, orderBy: { id: "asc" } }),
+      prisma.contato.findMany({ orderBy: { nome: "asc" } }),
+      prisma.etiqueta.findMany({ orderBy: { id: "asc" } }),
+      prisma.respostaRapida.findMany(),
+      /* include: traz JUNTO as etiquetas e as mensagens de cada conversa
+         (sem isso viriam só as colunas da própria conversa) */
+      prisma.conversa.findMany({
+        include: {
+          etiquetas: { select: { id: true } },
+          mensagens: { orderBy: { horario: "asc" } },
+        },
+      }),
+      prisma.auditoria.findMany({ orderBy: { quando: "asc" } }),
+    ]);
+
+  res.json({
+    marca: { nome: configuracao?.nomeMarca ?? "Talk Atendimento" },
+    atendentes,
+    estacoes: estacoes.map(estacaoParaFront),
+    contatos,
+    etiquetas,
+    respostasRapidas,
+    conversas: conversas.map(conversaParaFront),
+    auditoria: auditoria.map(auditoriaParaFront),
+  });
 });

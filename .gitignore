@@ -6,3 +6,6 @@ node_modules/
 
 # Logs
 npm-debug.log*
+
+# Código gerado pelo Prisma (cada um gera com "npm install" ou "npm run banco:gerar")
+src/generated/

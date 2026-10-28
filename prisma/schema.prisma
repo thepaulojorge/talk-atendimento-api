@@ -1,0 +1,243 @@
+// O "MAPA" DO BANCO DE DADOS.
+// Cada `model` vira uma TABELA. Cada linha dentro dele vira uma COLUNA.
+// Depois de mudar este arquivo, rode `npm run banco:migrar`: o Prisma
+// compara com o banco e cria/altera as tabelas sozinho (uma "migração").
+//
+// Convenção: no código usamos camelCase (atendenteId); no banco, nomes
+// em snake_case e no plural (tabela "conversas", coluna "atendente_id").
+// O @map e o @@map fazem essa "tradução".
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Listas de valores permitidos (enums) ----------
+// O banco RECUSA qualquer valor fora da lista: um status "resolvidaa"
+// (com erro de digitação) nunca chega a ser gravado.
+
+enum Papel {
+  atendente
+  supervisor
+  diretoria
+}
+
+enum Turno {
+  manha
+  tarde
+  noite
+}
+
+enum TipoConversa {
+  contato
+  grupo
+}
+
+enum StatusConversa {
+  aberta
+  resolvida
+}
+
+enum TipoMensagem {
+  texto
+  audio
+  nota
+  sistema
+}
+
+enum Direcao {
+  recebida // do cliente para a empresa
+  enviada // da empresa para o cliente
+  interna // nota ou evento: só a equipe vê
+}
+
+enum TipoAuditoria {
+  edicao
+  exclusao
+  conversa
+}
+
+// ---------- A equipe ----------
+
+model Atendente {
+  id    String @id
+  nome  String
+  papel Papel  @default(atendente)
+
+  // Relações "ao contrário": não viram colunas, só deixam o Prisma
+  // navegar ("as conversas deste atendente")
+  conversas         Conversa[]
+  mensagens         Mensagem[]  @relation("autor")
+  mensagensApagadas Mensagem[]  @relation("apagadaPor")
+  escalas           Escala[]
+  registros         Auditoria[]
+
+  @@map("atendentes")
+}
+
+model Estacao {
+  id     String   @id
+  nome   String
+  escala Escala[]
+
+  @@map("estacoes")
+}
+
+// Quem cobre cada turno em cada estação. Uma linha por (estação + turno):
+// a "chave" da tabela é a dupla, e não um id sozinho (@@id com dois campos)
+model Escala {
+  estacaoId   String  @map("estacao_id")
+  turno       Turno
+  atendenteId String? @map("atendente_id")
+
+  estacao   Estacao    @relation(fields: [estacaoId], references: [id], onDelete: Cascade)
+  atendente Atendente? @relation(fields: [atendenteId], references: [id], onDelete: SetNull)
+
+  @@id([estacaoId, turno])
+  @@map("escalas")
+}
+
+// ---------- Contatos, etiquetas e respostas rápidas ----------
+
+model Contato {
+  id         String  @id
+  nome       String
+  numero     String  @unique // dois contatos nunca têm o mesmo número
+  email      String?
+  empresa    String?
+  observacao String?
+  salvo      Boolean @default(true) // false = número que escreveu mas não foi salvo
+
+  conversas Conversa[]
+
+  @@map("contatos")
+}
+
+model Etiqueta {
+  id       String  @id
+  nome     String
+  cor      String
+  editavel Boolean @default(false) // as "Personalizadas" podem ser renomeadas
+
+  // Muitos-para-muitos: uma conversa tem várias etiquetas, e uma etiqueta
+  // está em várias conversas. O Prisma cria sozinho a tabela do meio
+  conversas Conversa[]
+
+  @@map("etiquetas")
+}
+
+model RespostaRapida {
+  atalho String @id
+  texto  String
+
+  @@map("respostas_rapidas")
+}
+
+// ---------- Conversas e mensagens ----------
+
+model Conversa {
+  id             String         @id
+  tipo           TipoConversa
+  status         StatusConversa @default(aberta)
+  arquivada      Boolean        @default(false)
+  marcadaNaoLida Boolean        @default(false) @map("marcada_nao_lida")
+  fixadaEm       DateTime?      @map("fixada_em")
+
+  // Conversa com contato: aponta para o contato
+  contatoId String?  @map("contato_id")
+  contato   Contato? @relation(fields: [contatoId], references: [id])
+
+  // Grupo: nome e participantes ficam na própria conversa
+  nomeGrupo     String?  @map("nome_grupo")
+  participantes String[] // lista de textos (o Postgres guarda listas!)
+
+  // Quem está atendendo (null = na fila)
+  atendenteId String?    @map("atendente_id")
+  atendente   Atendente? @relation(fields: [atendenteId], references: [id], onDelete: SetNull)
+
+  etiquetas Etiqueta[]
+  mensagens Mensagem[]
+
+  @@map("conversas")
+}
+
+model Mensagem {
+  id          String       @id
+  tipo        TipoMensagem
+  direcao     Direcao
+  horario     DateTime
+  lida        Boolean      @default(false)
+  texto       String?
+  audioUrl    String?      @map("audio_url")
+  duracao     Int? // segundos de áudio
+  encaminhada Boolean      @default(false)
+
+  // A conversa dona da mensagem. onDelete: Cascade = apagou a conversa,
+  // as mensagens dela vão junto (a cópia fica guardada na auditoria)
+  conversaId String   @map("conversa_id")
+  conversa   Conversa @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+
+  // Quem escreveu: um atendente (enviadas e notas) OU o nome de um
+  // participante do grupo (recebidas). Em conversa com contato, os dois ficam vazios
+  autorId   String?    @map("autor_id")
+  autor     Atendente? @relation("autor", fields: [autorId], references: [id], onDelete: SetNull)
+  autorNome String?    @map("autor_nome")
+
+  // Resposta: aponta para OUTRA mensagem da mesma tabela (relação consigo mesma)
+  respostaAId String?    @map("resposta_a_id")
+  respostaA   Mensagem?  @relation("respostas", fields: [respostaAId], references: [id], onDelete: SetNull)
+  respostas   Mensagem[] @relation("respostas")
+
+  // Edição: o texto anterior não se perde
+  editadaEm         DateTime? @map("editada_em")
+  versoesAnteriores String[]  @map("versoes_anteriores")
+
+  // Exclusão "suave" (soft delete): a mensagem continua aqui, só marcada
+  apagada      Boolean    @default(false)
+  apagadaEm    DateTime?  @map("apagada_em")
+  apagadaPorId String?    @map("apagada_por_id")
+  apagadaPor   Atendente? @relation("apagadaPor", fields: [apagadaPorId], references: [id], onDelete: SetNull)
+
+  // Índice: deixa rápida a busca "todas as mensagens desta conversa, por horário"
+  @@index([conversaId, horario])
+  @@map("mensagens")
+}
+
+// ---------- Auditoria (supervisão) ----------
+// Sem relação com Conversa DE PROPÓSITO: o registro precisa sobreviver
+// mesmo depois que a conversa é excluída. Por isso guardamos o nome junto
+
+model Auditoria {
+  id           String        @id
+  tipo         TipoAuditoria
+  quando       DateTime
+  conversaId   String        @map("conversa_id")
+  conversaNome String        @map("conversa_nome")
+  mensagemId   String?       @map("mensagem_id")
+  tipoMensagem TipoMensagem? @map("tipo_mensagem")
+  antes        String?
+  depois       String?
+  mensagens    Json? // cópia da conversa excluída: [{ quem, quando, texto }]
+  estacaoId    String?       @map("estacao_id")
+  turno        Turno?
+
+  autorId String    @map("autor_id")
+  autor   Atendente @relation(fields: [autorId], references: [id])
+
+  @@index([quando])
+  @@map("auditoria")
+}
+
+// ---------- Configurações da empresa ----------
+// Uma linha só (id sempre 1): o nome da marca (white-label)
+
+model Configuracao {
+  id        Int    @id @default(1)
+  nomeMarca String @default("Talk Atendimento") @map("nome_marca")
+
+  @@map("configuracoes")
+}
