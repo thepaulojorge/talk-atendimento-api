@@ -15,12 +15,16 @@ export function estacaoParaFront(estacao) {
   return { id: estacao.id, nome: estacao.nome, escala };
 }
 
-export function mensagemParaFront(m) {
+/* { supervisao }: quem pode ver o que foi apagado ou editado.
+   Para os outros, a mensagem apagada chega SEM o conteúdo, e a editada
+   sem as versões antigas: o dado nem sai do servidor */
+export function mensagemParaFront(m, { supervisao = false } = {}) {
+  const esconder = m.apagada && !supervisao;
   return {
     id: m.id,
     tipo: m.tipo,
-    texto: m.texto,
-    audioUrl: m.audioUrl,
+    texto: esconder ? null : m.texto,
+    audioUrl: esconder ? null : m.audioUrl,
     duracao: m.duracao,
     horario: iso(m.horario),
     direcao: m.direcao,
@@ -30,14 +34,14 @@ export function mensagemParaFront(m) {
     respostaA: m.respostaAId,
     encaminhada: m.encaminhada,
     editadaEm: iso(m.editadaEm),
-    versoesAnteriores: m.versoesAnteriores,
+    versoesAnteriores: supervisao ? m.versoesAnteriores : [],
     apagada: m.apagada,
     apagadaPor: m.apagadaPorId,
     apagadaEm: iso(m.apagadaEm),
   };
 }
 
-export function conversaParaFront(c) {
+export function conversaParaFront(c, opcoes = {}) {
   return {
     id: c.id,
     tipo: c.tipo,
@@ -48,7 +52,7 @@ export function conversaParaFront(c) {
     marcadaNaoLida: c.marcadaNaoLida,
     fixadaEm: iso(c.fixadaEm),
     etiquetas: c.etiquetas.map((e) => e.id), // o front guarda só os ids
-    mensagens: c.mensagens.map(mensagemParaFront),
+    mensagens: c.mensagens.map((m) => mensagemParaFront(m, opcoes)),
   };
 }
 

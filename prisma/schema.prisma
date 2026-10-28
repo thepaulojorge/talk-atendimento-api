@@ -55,6 +55,12 @@ enum Direcao {
   interna // nota ou evento: só a equipe vê
 }
 
+// Conta de ESTAÇÃO (quem entra depende do turno) ou PESSOAL (uma pessoa só)
+enum TipoConta {
+  estacao
+  pessoal
+}
+
 enum TipoAuditoria {
   edicao
   exclusao
@@ -75,6 +81,7 @@ model Atendente {
   mensagensApagadas Mensagem[]  @relation("apagadaPor")
   escalas           Escala[]
   registros         Auditoria[]
+  contas            Conta[]
 
   @@map("atendentes")
 }
@@ -83,8 +90,31 @@ model Estacao {
   id     String   @id
   nome   String
   escala Escala[]
+  contas Conta[]
 
   @@map("estacoes")
+}
+
+// ---------- Login ----------
+// A senha NUNCA é guardada: só o "hash" dela (a senha embaralhada pelo
+// bcrypt, de um jeito que não dá para desfazer). No login, o bcrypt
+// embaralha a senha digitada do mesmo jeito e compara os dois hashes
+
+model Conta {
+  id        String    @id @default(cuid()) // cuid(): o Prisma gera um id único sozinho
+  email     String    @unique
+  senhaHash String    @map("senha_hash")
+  tipo      TipoConta
+  ativa     Boolean   @default(true) // false = conta bloqueada (sem apagar o histórico)
+  criadaEm  DateTime  @default(now()) @map("criada_em")
+
+  // Estação: quem entra depende da escala. Pessoal: é sempre esta pessoa
+  estacaoId   String?    @map("estacao_id")
+  estacao     Estacao?   @relation(fields: [estacaoId], references: [id], onDelete: Cascade)
+  atendenteId String?    @map("atendente_id")
+  atendente   Atendente? @relation(fields: [atendenteId], references: [id], onDelete: Cascade)
+
+  @@map("contas")
 }
 
 // Quem cobre cada turno em cada estação. Uma linha por (estação + turno):

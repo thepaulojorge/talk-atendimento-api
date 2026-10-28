@@ -6,6 +6,7 @@
 
    Em inglês, isto se chama "seed" (semente): os dados iniciais do banco */
 import { readFile } from "node:fs/promises";
+import bcrypt from "bcryptjs";
 
 try {
   process.loadEnvFile(); // lê o .env (como o --env-file do npm run dev)
@@ -33,6 +34,7 @@ async function popular() {
   /* A ORDEM importa: primeiro quem DEPENDE de outros (mensagens dependem
      de conversas, que dependem de contatos...). Apagar um contato que
      ainda tem conversas daria erro de chave estrangeira */
+  await prisma.conta.deleteMany();
   await prisma.auditoria.deleteMany();
   await prisma.mensagem.deleteMany();
   await prisma.conversa.deleteMany();
@@ -62,6 +64,20 @@ async function popular() {
       },
     });
   }
+
+  /* CONTAS DE DEMONSTRAÇÃO. A senha "demo123" vira um hash: um texto
+     como "$2b$10$N9qo8uLOickgx2ZMRZoMy..." que não dá para desfazer.
+     O 10 é o "custo": quanto maior, mais lento embaralhar, e mais lento
+     para um invasor testar senhas. 10 é o padrão recomendado */
+  const senhaHash = await bcrypt.hash("demo123", 10);
+  await prisma.conta.createMany({
+    data: [
+      { email: "estacao01@talk.com", senhaHash, tipo: "estacao", estacaoId: "est01" },
+      { email: "estacao02@talk.com", senhaHash, tipo: "estacao", estacaoId: "est02" },
+      { email: "supervisao@talk.com", senhaHash, tipo: "pessoal", atendenteId: "at4" },
+      { email: "diretoria@talk.com", senhaHash, tipo: "pessoal", atendenteId: "at5" },
+    ],
+  });
 
   await prisma.contato.createMany({ data: dados.contatos.map((c) => ({ ...c, salvo: c.salvo !== false })) });
   await prisma.etiqueta.createMany({ data: dados.etiquetas.map((e) => ({ ...e, editavel: Boolean(e.editavel) })) });
@@ -135,6 +151,7 @@ async function popular() {
   // Um resumo, para conferir
   const total = {
     atendentes: await prisma.atendente.count(),
+    contas: await prisma.conta.count(),
     contatos: await prisma.contato.count(),
     conversas: await prisma.conversa.count(),
     mensagens: await prisma.mensagem.count(),

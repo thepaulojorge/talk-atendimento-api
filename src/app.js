@@ -2,6 +2,7 @@
 
    O Express funciona como uma "esteira": cada pedido (request) que chega
    passa pelas peças na ORDEM em que foram registradas com app.use():
+   0. trust proxy   -> descobrir o IP de verdade de quem pede (ver abaixo)
    1. cors          -> deixa o site do front conversar com a API
    2. express.json  -> transforma o corpo dos pedidos (texto JSON) em objeto
    3. as rotas      -> respondem cada endereço (/api/saude, /api/dados...)
@@ -11,8 +12,15 @@ import express from "express";
 import cors from "cors";
 import { rotasSaude } from "./rotas/saude.js";
 import { rotasDados } from "./rotas/dados.js";
+import { rotasAutenticacao } from "./rotas/autenticacao.js";
+import { rotasPublico } from "./rotas/publico.js";
 
 export const app = express();
+
+/* No Render, os pedidos chegam por um "intermediário" (proxy) deles.
+   Sem esta linha, o Express acharia que TODO mundo tem o mesmo IP (o do
+   proxy), e o limite de tentativas de senha bloquearia todos de uma vez */
+app.set("trust proxy", 1);
 
 /* CORS: por segurança, o navegador BLOQUEIA um site de ler respostas de
    outro endereço. O front (localhost:5173 ou github.io) e a API
@@ -27,7 +35,9 @@ app.use(express.json());
 
 // Cada grupo de rotas mora no seu arquivo. "/api" na frente de todas
 app.use("/api", rotasSaude);
-app.use("/api", rotasDados);
+app.use("/api", rotasPublico);
+app.use("/api/auth", rotasAutenticacao);
+app.use("/api", rotasDados); // protegida: exige login (ver rotas/dados.js)
 
 // Nenhuma rota respondeu: 404 (não encontrado), em JSON como o resto da API
 app.use((req, res) => {
