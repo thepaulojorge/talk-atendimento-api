@@ -12,7 +12,8 @@
     "banco:gerar": "prisma generate",
     "banco:migrar": "prisma migrate dev",
     "banco:popular": "prisma db seed",
-    "banco:ver": "prisma studio"
+    "banco:ver": "prisma studio",
+    "banco:aplicar": "prisma migrate deploy"
   },
   "engines": {
     "node": ">=22.18"
