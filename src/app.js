@@ -33,7 +33,7 @@ app.set("trust proxy", 1);
    outro endereço. O front (localhost:5173 ou github.io) e a API
    (localhost:3000 ou onrender.com) são endereços diferentes, então a API
    precisa dizer "esses sites podem falar comigo". A lista vem do .env */
-const origensPermitidas = (process.env.ORIGENS_PERMITIDAS || "http://localhost:5173")
+export const origensPermitidas = (process.env.ORIGENS_PERMITIDAS || "http://localhost:5173")
   .split(",")
   .map((origem) => origem.trim());
 

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../banco.js";
 import { exigirLogin, exigirPapel } from "../autenticacao/middleware.js";
+import { avisarRecarregar } from "../tempoReal.js";
 
 /* CONFIGURAÇÕES DA EMPRESA (só a diretoria): o nome da marca, a escala
    de turnos e os números de WhatsApp de cada linha.
@@ -79,4 +80,6 @@ rotasConfiguracoes.put("/configuracoes", async (req, res) => {
   ]);
 
   res.status(204).end();
+  // Nome, escala e números mudaram: todo mundo busca de novo (o nome novo aparece na hora)
+  avisarRecarregar();
 });

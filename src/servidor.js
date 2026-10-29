@@ -3,7 +3,8 @@
    Separado do app.js de propósito: o app.js MONTA a API (rotas, regras),
    este arquivo só a coloca para rodar. Mais adiante, os testes vão usar
    o app.js sem precisar ligar um servidor de verdade. */
-import { app } from "./app.js";
+import { app, origensPermitidas } from "./app.js";
+import { iniciarTempoReal } from "./tempoReal.js";
 
 /* process.env: as VARIÁVEIS DE AMBIENTE, configurações que ficam FORA
    do código (no arquivo .env em casa; no painel do Render, na nuvem).
@@ -11,7 +12,10 @@ import { app } from "./app.js";
    variável PORT, por isso olhamos as duas */
 const porta = Number(process.env.PORT || process.env.PORTA || 3000);
 
-app.listen(porta, () => {
+/* app.listen devolve o SERVIDOR HTTP. O Socket.io (tempo real) se liga
+   a ele: a API e o tempo real dividem a mesma porta */
+const servidor = app.listen(porta, () => {
   console.log(`✅ API do Talk Atendimento rodando em http://localhost:${porta}`);
   console.log(`   Teste no navegador: http://localhost:${porta}/api/saude`);
 });
+iniciarTempoReal(servidor, origensPermitidas);

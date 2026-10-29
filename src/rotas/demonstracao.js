@@ -3,6 +3,7 @@ import { prisma } from "../banco.js";
 import { exigirLogin } from "../autenticacao/middleware.js";
 import { popularComExemplos } from "../dados/exemplos.js";
 import { ErroDaApi, acharConversa, acharMensagem, evento, exigirId } from "../conversas/regras.js";
+import { avisarConversa, avisarRecarregar } from "../tempoReal.js";
 
 /* FERRAMENTAS DO MODO DEMONSTRAÇÃO (o portfólio).
    Numa empresa de verdade, MODO_DEMONSTRACAO fica false e TODAS as rotas
@@ -21,6 +22,7 @@ rotasDemonstracao.use("/demonstracao", exigirLogin, (req, res, next) => {
 rotasDemonstracao.post("/demonstracao/restaurar", async (req, res) => {
   await popularComExemplos(prisma);
   res.status(204).end();
+  avisarRecarregar(); // todo mundo busca os exemplos de novo
 });
 
 /* POST /api/demonstracao/conversas/:id/recebida   corpo: { id, texto, autor? }
@@ -44,6 +46,7 @@ rotasDemonstracao.post("/demonstracao/conversas/:id/recebida", async (req, res) 
     ...novas.map((data) => prisma.mensagem.create({ data })),
   ]);
   res.status(204).end();
+  avisarConversa(conversa.id); // a mensagem "do cliente" chega ao vivo para a equipe
 });
 
 // POST /api/demonstracao/mensagens/:id/lida   (finge que o cliente leu: ✓✓ azul)
@@ -51,4 +54,5 @@ rotasDemonstracao.post("/demonstracao/mensagens/:id/lida", async (req, res) => {
   const { mensagem } = await acharMensagem(req, req.params.id);
   if (mensagem.direcao === "enviada") await prisma.mensagem.update({ where: { id: mensagem.id }, data: { lida: true } });
   res.status(204).end();
+  avisarConversa(mensagem.conversaId);
 });

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../banco.js";
 import { exigirLogin } from "../autenticacao/middleware.js";
 import { ErroDaApi, idValido } from "../conversas/regras.js";
+import { avisarEtiquetas } from "../tempoReal.js";
 
 /* ETIQUETAS: renomear as personalizáveis ("Personalizada 1" -> "Cobrança").
    Colocar e tirar etiqueta de uma conversa fica em rotas/conversas.js */
@@ -26,4 +27,5 @@ rotasEtiquetas.patch("/etiquetas/:id", exigirLogin, async (req, res) => {
 
   await prisma.etiqueta.update({ where: { id: etiqueta.id }, data: { nome } });
   res.status(204).end();
+  avisarEtiquetas();
 });

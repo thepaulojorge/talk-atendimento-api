@@ -13,9 +13,14 @@ import {
   idValido,
   nomeDaConversa,
 } from "../conversas/regras.js";
+import { avisarAuditoria, avisarContato, avisarConversa, avisarConversaExcluida } from "../tempoReal.js";
 
 /* CONVERSAS: tudo o que muda uma conversa (menos as mensagens, que
    estão em rotas/mensagens.js).
+
+   B6: depois de responder, cada rota AVISA quem atende a linha
+   (avisarConversa, do tempoReal.js): a mudança aparece na hora na tela
+   dos outros. Sem await: quem fez a ação não espera por isso.
 
    Cada rota responde 204 ("deu certo, nada a devolver"): o front já
    mostrou a mudança na tela antes de pedir. Se der erro, ele busca
@@ -51,6 +56,8 @@ rotasConversas.post("/conversas", async (req, res) => {
     data: { id, tipo: "contato", linhaId, contatoId, atendenteId: req.usuario.atendenteId },
   });
   res.status(204).end();
+  if (novoContato) avisarContato(contatoId);
+  avisarConversa(id);
 });
 
 /* PATCH /api/conversas/:id   (as marcações simples)
@@ -98,6 +105,7 @@ rotasConversas.patch("/conversas/:id", async (req, res) => {
   await prisma.$transaction(operacoes);
 
   res.status(204).end();
+  avisarConversa(conversa.id);
 });
 
 /* POST /api/conversas/:id/assumir   corpo: { eventoId }
@@ -112,6 +120,7 @@ rotasConversas.post("/conversas/:id/assumir", async (req, res) => {
     prisma.mensagem.create({ data: evento(eventoId, conversa.id, `${req.usuario.nome} assumiu a conversa`, new Date()) }),
   ]);
   res.status(204).end();
+  avisarConversa(conversa.id);
 });
 
 /* POST /api/conversas/:id/transferir   corpo: { destinoId, eventoId }
@@ -134,6 +143,7 @@ rotasConversas.post("/conversas/:id/transferir", async (req, res) => {
     prisma.mensagem.create({ data: evento(eventoId, conversa.id, texto, new Date()) }),
   ]);
   res.status(204).end();
+  avisarConversa(conversa.id);
 });
 
 /* POST /api/conversas/:id/resolver   corpo: { resolvida: true|false, eventoId } */
@@ -149,6 +159,7 @@ rotasConversas.post("/conversas/:id/resolver", async (req, res) => {
     prisma.mensagem.create({ data: evento(eventoId, conversa.id, texto, new Date()) }),
   ]);
   res.status(204).end();
+  avisarConversa(conversa.id);
 });
 
 /* PUT e DELETE /api/conversas/:id/etiquetas/:etiquetaId
@@ -160,6 +171,7 @@ rotasConversas.put("/conversas/:id/etiquetas/:etiquetaId", async (req, res) => {
   // connect: liga a conversa à etiqueta (na tabela do meio, que o Prisma cuida)
   await prisma.conversa.update({ where: { id: conversa.id }, data: { etiquetas: { connect: { id: etiqueta.id } } } });
   res.status(204).end();
+  avisarConversa(conversa.id);
 });
 
 rotasConversas.delete("/conversas/:id/etiquetas/:etiquetaId", async (req, res) => {
@@ -168,6 +180,7 @@ rotasConversas.delete("/conversas/:id/etiquetas/:etiquetaId", async (req, res) =
     await prisma.conversa.update({ where: { id: conversa.id }, data: { etiquetas: { disconnect: { id: req.params.etiquetaId } } } });
   }
   res.status(204).end();
+  avisarConversa(conversa.id);
 });
 
 /* DELETE /api/conversas/:id   (excluir a conversa inteira)
@@ -179,6 +192,8 @@ rotasConversas.delete("/conversas/:id", async (req, res) => {
     mensagens: { orderBy: { horario: "asc" }, include: { autor: true, arquivo: true } },
   });
   const nome = nomeDaConversa(conversa);
+  // O id do registro vem do front (o mesmo que ele já mostrou na tela), ou é criado aqui
+  const idRegistro = idValido(req.body?.auditoriaId) ? req.body.auditoriaId : `aud-${randomUUID()}`;
 
   // Quem escreveu cada mensagem, com nome (o registro é lido depois, por outra pessoa)
   const quem = (m) => {
@@ -200,7 +215,7 @@ rotasConversas.delete("/conversas/:id", async (req, res) => {
   await prisma.$transaction([
     prisma.auditoria.create({
       data: {
-        id: `aud-${randomUUID()}`,
+        id: idRegistro,
         tipo: "conversa",
         quando: new Date(),
         conversaId: conversa.id,
@@ -212,4 +227,6 @@ rotasConversas.delete("/conversas/:id", async (req, res) => {
     prisma.conversa.delete({ where: { id: conversa.id } }),
   ]);
   res.status(204).end();
+  avisarConversaExcluida(conversa.id, conversa.linhaId);
+  avisarAuditoria(idRegistro);
 });

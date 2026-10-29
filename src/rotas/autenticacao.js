@@ -5,6 +5,7 @@ import { prisma } from "../banco.js";
 import { criarToken } from "../autenticacao/tokens.js";
 import { resolverSessao } from "../autenticacao/sessao.js";
 import { exigirLogin } from "../autenticacao/middleware.js";
+import { atualizarSalas, avisarEstacoes } from "../tempoReal.js";
 
 export const rotasAutenticacao = Router();
 
@@ -34,6 +35,9 @@ async function responderComSessao(res, conta) {
   /* Login novo, começo limpo: as estações puxadas no turno anterior
      não continuam puxadas. Quem quiser, puxa de novo */
   await prisma.puxada.deleteMany({ where: { atendenteId: sessao.atendenteId } });
+  // Tempo real: se a pessoa estava aberta em outro navegador, as salas dela se ajustam
+  atualizarSalas(sessao.atendenteId);
+  avisarEstacoes();
   res.json({ token: criarToken(sessao), sessao: { ...sessao, desde: sessao.desde.toISOString() } });
 }
 
@@ -77,6 +81,8 @@ rotasAutenticacao.post("/demonstracao", limiteDeTentativas, async (req, res) => 
    precisa ser "desligado": o front apaga, e ele vence sozinho em 12 horas */
 rotasAutenticacao.post("/sair", exigirLogin, async (req, res) => {
   await prisma.puxada.deleteMany({ where: { atendenteId: req.usuario.atendenteId } });
+  atualizarSalas(req.usuario.atendenteId);
+  avisarEstacoes();
   res.status(204).end();
 });
 

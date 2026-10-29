@@ -11,8 +11,10 @@ import {
   deOndeVeio,
   evento,
   exigirId,
+  idValido,
   nomeDaConversa,
 } from "../conversas/regras.js";
+import { avisarAuditoria, avisarConversa } from "../tempoReal.js";
 
 /* MENSAGENS: enviar (texto, áudio, nota, encaminhada), editar e apagar */
 export const rotasMensagens = Router();
@@ -95,6 +97,7 @@ rotasMensagens.post("/conversas/:id/mensagens", exigirLogin, async (req, res) =>
     }),
   ]);
   res.status(204).end();
+  avisarConversa(conversa.id);
 });
 
 /* Só quem escreveu edita ou apaga (as mesmas regras do permissoes.js do front).
@@ -117,6 +120,8 @@ rotasMensagens.patch("/mensagens/:id", exigirLogin, async (req, res) => {
   if (texto === mensagem.texto) return res.status(204).end(); // nada mudou, nada a registrar
 
   const agora = new Date();
+  // O id do registro vem do front (o mesmo que ele já mostrou na tela), ou é criado aqui
+  const idRegistro = idValido(req.body?.auditoriaId) ? req.body.auditoriaId : `aud-${randomUUID()}`;
   await prisma.$transaction([
     prisma.mensagem.update({
       where: { id: mensagem.id },
@@ -125,7 +130,7 @@ rotasMensagens.patch("/mensagens/:id", exigirLogin, async (req, res) => {
     }),
     prisma.auditoria.create({
       data: {
-        id: `aud-${randomUUID()}`,
+        id: idRegistro,
         tipo: "edicao",
         quando: agora,
         conversaId: conversa.id,
@@ -139,6 +144,8 @@ rotasMensagens.patch("/mensagens/:id", exigirLogin, async (req, res) => {
     }),
   ]);
   res.status(204).end();
+  avisarConversa(conversa.id);
+  avisarAuditoria(idRegistro);
 });
 
 /* DELETE /api/mensagens/:id
@@ -148,6 +155,7 @@ rotasMensagens.delete("/mensagens/:id", exigirLogin, async (req, res) => {
   if (!podeApagar(req.usuario, mensagem)) throw new ErroDaApi(403, "Você não pode apagar esta mensagem.");
 
   const agora = new Date();
+  const idRegistro = idValido(req.body?.auditoriaId) ? req.body.auditoriaId : `aud-${randomUUID()}`;
   await prisma.$transaction([
     prisma.mensagem.update({
       where: { id: mensagem.id },
@@ -155,7 +163,7 @@ rotasMensagens.delete("/mensagens/:id", exigirLogin, async (req, res) => {
     }),
     prisma.auditoria.create({
       data: {
-        id: `aud-${randomUUID()}`,
+        id: idRegistro,
         tipo: "exclusao",
         quando: agora,
         conversaId: conversa.id,
@@ -168,4 +176,6 @@ rotasMensagens.delete("/mensagens/:id", exigirLogin, async (req, res) => {
     }),
   ]);
   res.status(204).end();
+  avisarConversa(conversa.id);
+  avisarAuditoria(idRegistro);
 });
