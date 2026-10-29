@@ -34,7 +34,8 @@
         "manha": "at1",
         "tarde": "at2",
         "noite": "at3"
-      }
+      },
+      "sigla": "E01"
     },
     {
       "id": "est02",
@@ -43,7 +44,34 @@
         "manha": "at2",
         "tarde": "at3",
         "noite": "at1"
-      }
+      },
+      "sigla": "E02"
+    }
+  ],
+  "linhas": [
+    {
+      "id": "linha-e01",
+      "numero": "5521990000001",
+      "estacaoId": "est01",
+      "papel": null
+    },
+    {
+      "id": "linha-e02",
+      "numero": "5521990000002",
+      "estacaoId": "est02",
+      "papel": null
+    },
+    {
+      "id": "linha-sup",
+      "numero": "5521990000090",
+      "estacaoId": null,
+      "papel": "supervisor"
+    },
+    {
+      "id": "linha-dir",
+      "numero": "5521990000099",
+      "estacaoId": null,
+      "papel": "diretoria"
     }
   ],
   "contatos": [
@@ -85,7 +113,7 @@
       "numero": "+55 21 94455-0005",
       "email": "roberto.faria@email.com",
       "empresa": "Faria Entregas",
-      "observacao": "Ainda sem conversa"
+      "observacao": "Cliente atendido pela supervisão"
     },
     {
       "id": "ct6",
@@ -93,7 +121,7 @@
       "numero": "+55 21 93366-0006",
       "email": null,
       "empresa": null,
-      "observacao": "Ainda sem conversa"
+      "observacao": "Negociação de contrato com a diretoria"
     }
   ],
   "etiquetas": [
@@ -259,7 +287,8 @@
           "lida": false,
           "autor": null
         }
-      ]
+      ],
+      "linhaId": "linha-e01"
     },
     {
       "id": "c2",
@@ -331,7 +360,8 @@
           "lida": true,
           "autor": null
         }
-      ]
+      ],
+      "linhaId": "linha-e02"
     },
     {
       "id": "c3",
@@ -356,7 +386,8 @@
           "lida": false,
           "autor": null
         }
-      ]
+      ],
+      "linhaId": "linha-e01"
     },
     {
       "id": "c4",
@@ -409,7 +440,8 @@
           "lida": true,
           "autor": "at3"
         }
-      ]
+      ],
+      "linhaId": "linha-e02"
     },
     {
       "id": "c5",
@@ -467,7 +499,8 @@
           "lida": false,
           "autor": "Bruno Alves"
         }
-      ]
+      ],
+      "linhaId": "linha-e01"
     },
     {
       "id": "c6",
@@ -501,6 +534,91 @@
           "direcao": "enviada",
           "lida": true,
           "autor": "at2"
+        }
+      ],
+      "linhaId": "linha-e02"
+    },
+    {
+      "id": "c7",
+      "tipo": "contato",
+      "contatoId": "ct5",
+      "linhaId": "linha-sup",
+      "atendenteId": "at4",
+      "marcadaNaoLida": false,
+      "arquivada": false,
+      "status": "aberta",
+      "etiquetas": [],
+      "fixadaEm": null,
+      "mensagens": [
+        {
+          "id": "m30",
+          "tipo": "texto",
+          "texto": "Boa tarde. Quero falar com a supervisão sobre o atendimento de ontem.",
+          "horario": "2026-10-10T15:10:00",
+          "direcao": "recebida",
+          "lida": true,
+          "autor": null
+        },
+        {
+          "id": "m31",
+          "tipo": "texto",
+          "texto": "Boa tarde, Roberto! Aqui é a Beatriz, da supervisão. Pode me contar o que aconteceu?",
+          "horario": "2026-10-10T15:14:00",
+          "direcao": "enviada",
+          "lida": true,
+          "autor": "at4"
+        },
+        {
+          "id": "m32",
+          "tipo": "texto",
+          "texto": "O rastreador ficou sem sinal e demoraram para me responder.",
+          "horario": "2026-10-10T15:20:00",
+          "direcao": "recebida",
+          "lida": false,
+          "autor": null
+        }
+      ]
+    },
+    {
+      "id": "c8",
+      "tipo": "contato",
+      "contatoId": "ct6",
+      "linhaId": "linha-dir",
+      "atendenteId": "at5",
+      "marcadaNaoLida": false,
+      "arquivada": false,
+      "status": "aberta",
+      "etiquetas": [
+        "orcamento"
+      ],
+      "fixadaEm": null,
+      "mensagens": [
+        {
+          "id": "m40",
+          "tipo": "texto",
+          "texto": "Olá, Helena. Recebi a proposta do contrato anual para 40 veículos.",
+          "horario": "2026-10-10T11:30:00",
+          "direcao": "recebida",
+          "lida": true,
+          "autor": null
+        },
+        {
+          "id": "m41",
+          "tipo": "texto",
+          "texto": "Olá, Luciana! Que bom. Ficou alguma dúvida sobre os valores?",
+          "horario": "2026-10-10T11:42:00",
+          "direcao": "enviada",
+          "lida": true,
+          "autor": "at5"
+        },
+        {
+          "id": "m42",
+          "tipo": "texto",
+          "texto": "Podemos marcar uma reunião na quinta?",
+          "horario": "2026-10-10T16:05:00",
+          "direcao": "recebida",
+          "lida": false,
+          "autor": null
         }
       ]
     }

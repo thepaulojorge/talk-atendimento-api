@@ -82,17 +82,55 @@ model Atendente {
   escalas           Escala[]
   registros         Auditoria[]
   contas            Conta[]
+  puxadas           Puxada[]
 
   @@map("atendentes")
 }
 
 model Estacao {
-  id     String   @id
-  nome   String
-  escala Escala[]
-  contas Conta[]
+  id      String   @id
+  nome    String
+  sigla   String // "E01": a marca curta que aparece na lista de conversas
+  escala  Escala[]
+  contas  Conta[]
+  linha   Linha? // o número de WhatsApp desta estação
+  puxadas Puxada[]
 
   @@map("estacoes")
+}
+
+// ---------- Linhas (os números de WhatsApp) ----------
+// Cada número pertence a UMA estação OU a um papel (supervisão, diretoria).
+// Um campo preenchido, o outro vazio: as duas formas de ter dono
+
+model Linha {
+  id     String @id
+  numero String @unique // só dígitos, com o 55 do Brasil: "5521990000001"
+
+  // Linha de estação. @unique: uma estação tem no máximo UMA linha
+  estacaoId String?  @unique @map("estacao_id")
+  estacao   Estacao? @relation(fields: [estacaoId], references: [id], onDelete: SetNull)
+
+  // Linha exclusiva: "supervisor" ou "diretoria" (só quem tem esse papel vê)
+  papel Papel?
+
+  conversas Conversa[]
+
+  @@map("linhas")
+}
+
+/* Quem está PUXANDO qual estação (além da própria).
+   Uma linha por (pessoa + estação): a chave é a dupla */
+model Puxada {
+  atendenteId String   @map("atendente_id")
+  estacaoId   String   @map("estacao_id")
+  desde       DateTime @default(now())
+
+  atendente Atendente @relation(fields: [atendenteId], references: [id], onDelete: Cascade)
+  estacao   Estacao   @relation(fields: [estacaoId], references: [id], onDelete: Cascade)
+
+  @@id([atendenteId, estacaoId])
+  @@map("puxadas")
 }
 
 // ---------- Login ----------
@@ -177,6 +215,11 @@ model Conversa {
   marcadaNaoLida Boolean        @default(false) @map("marcada_nao_lida")
   fixadaEm       DateTime?      @map("fixada_em")
 
+  // Por qual número de WhatsApp esta conversa acontece. O cliente sempre
+  // fala com o MESMO número, então a resposta sai sempre por esta linha
+  linhaId String @map("linha_id")
+  linha   Linha  @relation(fields: [linhaId], references: [id])
+
   // Conversa com contato: aponta para o contato
   contatoId String?  @map("contato_id")
   contato   Contato? @relation(fields: [contatoId], references: [id])
@@ -192,6 +235,8 @@ model Conversa {
   etiquetas Etiqueta[]
   mensagens Mensagem[]
 
+  // Índice: a busca mais comum é "as conversas destas linhas"
+  @@index([linhaId])
   @@map("conversas")
 }
 

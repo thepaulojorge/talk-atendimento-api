@@ -14,6 +14,12 @@ import { rotasSaude } from "./rotas/saude.js";
 import { rotasDados } from "./rotas/dados.js";
 import { rotasAutenticacao } from "./rotas/autenticacao.js";
 import { rotasPublico } from "./rotas/publico.js";
+import { rotasEstacoes } from "./rotas/estacoes.js";
+import { rotasConfiguracoes } from "./rotas/configuracoes.js";
+import { rotasMensagens } from "./rotas/mensagens.js";
+import { rotasConversas } from "./rotas/conversas.js";
+import { rotasEtiquetas } from "./rotas/etiquetas.js";
+import { rotasDemonstracao } from "./rotas/demonstracao.js";
 
 export const app = express();
 
@@ -31,13 +37,22 @@ const origensPermitidas = (process.env.ORIGENS_PERMITIDAS || "http://localhost:5
   .map((origem) => origem.trim());
 
 app.use(cors({ origin: origensPermitidas }));
-app.use(express.json());
+/* limit: o tamanho máximo do corpo do pedido. O padrão é 100 KB, pouco
+   para um áudio (que viaja como texto). 4 MB cobre alguns minutos */
+app.use(express.json({ limit: "4mb" }));
 
 // Cada grupo de rotas mora no seu arquivo. "/api" na frente de todas
 app.use("/api", rotasSaude);
 app.use("/api", rotasPublico);
 app.use("/api/auth", rotasAutenticacao);
 app.use("/api", rotasDados); // protegida: exige login (ver rotas/dados.js)
+app.use("/api", rotasEstacoes); // puxar e soltar estações (atendentes)
+app.use("/api", rotasConfiguracoes); // configurações da empresa (diretoria)
+// B5: as rotas que GRAVAM. Mensagens antes de conversas: as duas começam com /conversas
+app.use("/api", rotasMensagens); // enviar, editar e apagar mensagens
+app.use("/api", rotasConversas); // assumir, transferir, fixar, etiquetas, excluir...
+app.use("/api", rotasEtiquetas); // renomear etiquetas
+app.use("/api", rotasDemonstracao); // restaurar e simular (só no modo demonstração)
 
 // Nenhuma rota respondeu: 404 (não encontrado), em JSON como o resto da API
 app.use((req, res) => {
@@ -51,6 +66,15 @@ app.use((req, res) => {
    O "next" não é usado, mas precisa estar lá: são os 4 parâmetros que
    dizem ao Express "esta função trata erros" */
 app.use((erro, req, res, next) => {
+  // Erro "esperado", lançado de propósito pelas rotas: throw new ErroDaApi(404, "...")
+  if (erro.status && erro.status < 500 && erro.message) {
+    return res.status(erro.status).json({ erro: erro.message });
+  }
+  // Corpo grande demais (o limite do express.json)
+  if (erro.type === "entity.too.large") return res.status(413).json({ erro: "O conteúdo é grande demais." });
+  // P2002 = o Prisma avisando "esse valor já existe" (id ou número repetido)
+  if (erro.code === "P2002") return res.status(409).json({ erro: "Isso já existe no sistema." });
+
   console.error("❌ Erro:", erro);
   res.status(500).json({ erro: "Erro interno no servidor." });
 });

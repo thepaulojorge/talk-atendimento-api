@@ -13,6 +13,7 @@
     "banco:migrar": "prisma migrate dev",
     "banco:popular": "prisma db seed",
     "banco:ver": "prisma studio",
+    "banco:zerar": "prisma migrate reset --force",
     "banco:aplicar": "prisma migrate deploy"
   },
   "engines": {

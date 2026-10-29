@@ -31,6 +31,9 @@ const HASH_FALSO = bcrypt.hashSync("nenhuma-conta-tem-esta-senha", 10);
 async function responderComSessao(res, conta) {
   const { sessao, erro } = await resolverSessao(conta);
   if (erro) return res.status(403).json({ erro });
+  /* Login novo, começo limpo: as estações puxadas no turno anterior
+     não continuam puxadas. Quem quiser, puxa de novo */
+  await prisma.puxada.deleteMany({ where: { atendenteId: sessao.atendenteId } });
   res.json({ token: criarToken(sessao), sessao: { ...sessao, desde: sessao.desde.toISOString() } });
 }
 
@@ -68,6 +71,13 @@ rotasAutenticacao.post("/demonstracao", limiteDeTentativas, async (req, res) => 
   if (!conta?.ativa) return res.status(404).json({ erro: "A conta de demonstração não existe." });
 
   await responderComSessao(res, conta);
+});
+
+/* POST /api/auth/sair: solta as estações puxadas. O token em si não
+   precisa ser "desligado": o front apaga, e ele vence sozinho em 12 horas */
+rotasAutenticacao.post("/sair", exigirLogin, async (req, res) => {
+  await prisma.puxada.deleteMany({ where: { atendenteId: req.usuario.atendenteId } });
+  res.status(204).end();
 });
 
 // GET /api/auth/eu: "quem sou eu?" (útil para testar o token)
