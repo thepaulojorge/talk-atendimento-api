@@ -21,6 +21,7 @@ import { rotasConversas } from "./rotas/conversas.js";
 import { rotasEtiquetas } from "./rotas/etiquetas.js";
 import { rotasDemonstracao } from "./rotas/demonstracao.js";
 import { rotasArquivos } from "./rotas/arquivos.js";
+import { rotasWhatsapp } from "./rotas/whatsapp.js";
 
 export const app = express();
 
@@ -38,6 +39,10 @@ export const origensPermitidas = (process.env.ORIGENS_PERMITIDAS || "http://loca
   .map((origem) => origem.trim());
 
 app.use(cors({ origin: origensPermitidas }));
+
+/* O webhook do WhatsApp vem ANTES do express.json: ele precisa do corpo
+   "cru" para conferir a assinatura da Meta (ver rotas/whatsapp.js) */
+app.use("/api", rotasWhatsapp);
 /* O corpo dos pedidos em JSON (até 100 KB, o padrão: só textos).
    Arquivos e áudios têm a rota deles, que aceita até 10 MB (rotas/arquivos.js) */
 app.use(express.json());
@@ -71,7 +76,8 @@ app.use((erro, req, res, next) => {
   // Corpo grande demais (o limite do express.json, ou os 10 MB de um arquivo)
   if (erro.type === "entity.too.large") return res.status(413).json({ erro: "O arquivo passa do limite de 10 MB." });
   // Erro "esperado", lançado de propósito pelas rotas: throw new ErroDaApi(404, "...")
-  if (erro.status && erro.status < 500 && erro.message) {
+  // (ou um erro do WhatsApp, que é 502 mas tem uma explicação boa para mostrar)
+  if (erro.status && erro.message && (erro.status < 500 || erro.expor)) {
     return res.status(erro.status).json({ erro: erro.message });
   }
   // P2002 = o Prisma avisando "esse valor já existe" (id ou número repetido)

@@ -15,6 +15,8 @@ import {
   nomeDaConversa,
 } from "../conversas/regras.js";
 import { avisarAuditoria, avisarConversa } from "../tempoReal.js";
+import { whatsappConfigurado } from "../whatsapp/graph.js";
+import { enviarPeloWhatsapp } from "../whatsapp/enviar.js";
 
 /* MENSAGENS: enviar (texto, áudio, nota, encaminhada), editar e apagar */
 export const rotasMensagens = Router();
@@ -31,6 +33,7 @@ rotasMensagens.post("/conversas/:id/mensagens", exigirLogin, async (req, res) =>
 
   // ---------- 1. Validar o conteúdo ----------
   const conteudo = {};
+  let arquivo = null;
   if (tipo === "texto" || tipo === "nota") {
     const limpo = typeof texto === "string" ? texto.trim() : "";
     if (!limpo || limpo.length > LIMITE_TEXTO) throw new ErroDaApi(400, `A mensagem deve ter de 1 a ${LIMITE_TEXTO} caracteres.`);
@@ -38,7 +41,7 @@ rotasMensagens.post("/conversas/:id/mensagens", exigirLogin, async (req, res) =>
   } else if (tipo === "audio" || tipo === "arquivo") {
     /* acharArquivo confere se a pessoa pode usar este arquivo: foi ela que
        enviou, ou ele está numa conversa que ela vê (encaminhar) */
-    const arquivo = await acharArquivo(req, arquivoId);
+    arquivo = await acharArquivo(req, arquivoId);
     if (tipo === "audio" && !arquivo.tipo.startsWith("audio/")) throw new ErroDaApi(400, "Este arquivo não é um áudio.");
     conteudo.arquivoId = arquivo.id;
     if (tipo === "audio") conteudo.duracao = Number.isInteger(duracao) && duracao >= 0 && duracao <= 3600 ? duracao : 0;
@@ -49,10 +52,28 @@ rotasMensagens.post("/conversas/:id/mensagens", exigirLogin, async (req, res) =>
   const ehNota = tipo === "nota";
 
   // Citação: só de uma mensagem da MESMA conversa
-  let respostaAId = null;
+  let citada = null;
   if (respostaA && !ehNota) {
-    const citada = await prisma.mensagem.findFirst({ where: { id: String(respostaA), conversaId: conversa.id } });
-    respostaAId = citada?.id ?? null;
+    citada = await prisma.mensagem.findFirst({ where: { id: String(respostaA), conversaId: conversa.id } });
+  }
+
+  /* ---------- 2. B7: a linha é um WhatsApp DE VERDADE? ----------
+     Então a mensagem sai pela Meta ANTES de ser gravada aqui. Se a Meta
+     recusar (24 horas, número inválido...), nada é gravado e quem enviou
+     recebe o motivo. Nota interna nunca sai: ela é só da equipe */
+  let whatsappId = null;
+  const linha = await prisma.linha.findUnique({ where: { id: conversa.linhaId } });
+  if (!ehNota && linha.whatsappId && whatsappConfigurado()) {
+    if (conversa.tipo !== "contato") throw new ErroDaApi(400, "Mensagens para grupos ainda não saem pelo WhatsApp.");
+    const contato = await prisma.contato.findUnique({ where: { id: conversa.contatoId } });
+    whatsappId = await enviarPeloWhatsapp({
+      linha,
+      contato,
+      tipo,
+      texto: conteudo.texto,
+      arquivo,
+      citadaWhatsappId: citada?.whatsappId,
+    });
   }
 
   /* ---------- 2. As regras (as mesmas do reducer do front) ----------
@@ -91,8 +112,9 @@ rotasMensagens.post("/conversas/:id/mensagens", exigirLogin, async (req, res) =>
         direcao: ehNota ? "interna" : "enviada",
         lida: ehNota, // nota: ninguém "lê" do outro lado
         autorId: req.usuario.atendenteId,
-        respostaAId,
+        respostaAId: citada?.id ?? null,
         encaminhada: encaminhada === true,
+        whatsappId,
       },
     }),
   ]);

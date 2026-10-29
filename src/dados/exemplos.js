@@ -73,6 +73,11 @@ export async function popularComExemplos(prisma, log = () => {}) {
   for (const { id } of arquivos) await rm(caminhoDe(id), { force: true });
   await prisma.arquivo.deleteMany();
   await prisma.conversa.deleteMany();
+  /* B7: as linhas já ligadas ao WhatsApp de verdade continuam ligadas.
+     Restaurar os exemplos não pode "desligar" o número da empresa */
+  const ligadas = new Map(
+    (await prisma.linha.findMany({ where: { whatsappId: { not: null } } })).map((l) => [l.id, l.whatsappId])
+  );
   await prisma.linha.deleteMany();
   await prisma.escala.deleteMany();
   await prisma.estacao.deleteMany();
@@ -117,7 +122,9 @@ export async function popularComExemplos(prisma, log = () => {}) {
   });
 
   // As linhas (números de WhatsApp): uma por estação, mais as exclusivas
-  await prisma.linha.createMany({ data: dados.linhas });
+  await prisma.linha.createMany({
+    data: dados.linhas.map((l) => ({ ...l, whatsappId: ligadas.get(l.id) ?? null })),
+  });
 
   await prisma.contato.createMany({ data: dados.contatos.map((c) => ({ ...c, salvo: c.salvo !== false })) });
   await prisma.etiqueta.createMany({ data: dados.etiquetas.map((e) => ({ ...e, editavel: Boolean(e.editavel) })) });

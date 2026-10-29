@@ -52,7 +52,8 @@ rotasDemonstracao.post("/demonstracao/conversas/:id/recebida", async (req, res) 
 // POST /api/demonstracao/mensagens/:id/lida   (finge que o cliente leu: ✓✓ azul)
 rotasDemonstracao.post("/demonstracao/mensagens/:id/lida", async (req, res) => {
   const { mensagem } = await acharMensagem(req, req.params.id);
-  if (mensagem.direcao === "enviada") await prisma.mensagem.update({ where: { id: mensagem.id }, data: { lida: true } });
+  // Mensagem que saiu pelo WhatsApp de verdade: quem avisa a leitura é a Meta, não a simulação
+  if (mensagem.direcao === "enviada" && !mensagem.whatsappId) await prisma.mensagem.update({ where: { id: mensagem.id }, data: { lida: true } });
   res.status(204).end();
   avisarConversa(mensagem.conversaId);
 });

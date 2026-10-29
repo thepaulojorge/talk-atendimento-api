@@ -27,11 +27,11 @@ rotasConfiguracoes.get("/configuracoes", async (req, res) => {
       sigla: e.sigla,
       escala: Object.fromEntries(e.escala.map((l) => [l.turno, l.atendenteId])),
     })),
-    linhas: linhas.map((l) => ({ id: l.id, numero: l.numero, estacaoId: l.estacaoId, papel: l.papel })),
+    linhas: linhas.map((l) => ({ id: l.id, numero: l.numero, estacaoId: l.estacaoId, papel: l.papel, whatsappId: l.whatsappId })),
   });
 });
 
-/* PUT /api/configuracoes   corpo: { marca: { nome }, estacoes: [{ id, escala }], linhas: [{ id, numero }] }
+/* PUT /api/configuracoes   corpo: { marca: { nome }, estacoes: [{ id, escala }], linhas: [{ id, numero, whatsappId }] }
    PUT = "substitua por isto": o front manda a configuração INTEIRA de uma vez */
 rotasConfiguracoes.put("/configuracoes", async (req, res) => {
   const { marca, estacoes, linhas } = req.body ?? {};
@@ -61,6 +61,17 @@ rotasConfiguracoes.put("/configuracoes", async (req, res) => {
     return res.status(400).json({ erro: "Duas linhas não podem ter o mesmo número." });
   }
 
+  /* B7: o "ID do número de telefone" da Meta (só dígitos). Vazio = linha simulada.
+     Também não pode repetir: cada número da Meta pertence a UMA linha */
+  const idsMeta = linhas.map((l) => String(l.whatsappId ?? "").trim());
+  if (idsMeta.some((id) => id && !/^\d{5,30}$/.test(id))) {
+    return res.status(400).json({ erro: "O ID do número na Meta tem só números (copie do painel da Meta, em \"Configuração da API\")." });
+  }
+  const preenchidos = idsMeta.filter(Boolean);
+  if (new Set(preenchidos).size !== preenchidos.length) {
+    return res.status(400).json({ erro: "Duas linhas não podem usar o mesmo número da Meta." });
+  }
+
   /* ---------- 2. Gravar tudo numa TRANSAÇÃO ----------
      $transaction: ou TODAS as mudanças acontecem, ou NENHUMA. Se a 5ª
      falhar, as 4 primeiras são desfeitas. Sem isso, um erro no meio
@@ -76,7 +87,9 @@ rotasConfiguracoes.put("/configuracoes", async (req, res) => {
         })
       )
     ),
-    ...linhas.map((linha, i) => prisma.linha.update({ where: { id: linha.id }, data: { numero: numeros[i] } })),
+    ...linhas.map((linha, i) =>
+      prisma.linha.update({ where: { id: linha.id }, data: { numero: numeros[i], whatsappId: idsMeta[i] || null } })
+    ),
   ]);
 
   res.status(204).end();

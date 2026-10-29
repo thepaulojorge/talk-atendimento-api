@@ -34,6 +34,8 @@ export function linhaParaFront(linha, estacoes) {
     estacaoId: linha.estacaoId,
     papel: linha.papel,
     nome: estacao?.nome ?? NOMES_DOS_PAPEIS[linha.papel] ?? "Linha",
+    // B7: ligada ao WhatsApp de verdade? (o id da Meta em si não precisa ir para a tela)
+    whatsapp: Boolean(linha.whatsappId),
     sigla: estacao?.sigla ?? NOMES_DOS_PAPEIS[linha.papel] ?? "",
   };
 }
@@ -66,6 +68,9 @@ export function mensagemParaFront(m, { supervisao = false } = {}) {
     apagada: m.apagada,
     apagadaPor: m.apagadaPorId,
     apagadaEm: iso(m.apagadaEm),
+    // B7: saiu (ou chegou) pelo WhatsApp de verdade? E, se o WhatsApp recusou a entrega, o motivo
+    whatsapp: Boolean(m.whatsappId),
+    erroEnvio: m.erroEnvio,
   };
 }
 

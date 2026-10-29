@@ -116,6 +116,11 @@ model Linha {
   // Linha exclusiva: "supervisor" ou "diretoria" (só quem tem esse papel vê)
   papel Papel?
 
+  /* B7: o "ID do número de telefone" na Meta (phone_number_id).
+     Preenchido = a linha é um WhatsApp DE VERDADE: as mensagens entram e
+     saem pela API da Meta. Vazio = a linha funciona em modo simulado */
+  whatsappId String? @unique @map("whatsapp_id")
+
   conversas Conversa[]
 
   @@map("linhas")
@@ -181,6 +186,10 @@ model Contato {
   empresa    String?
   observacao String?
   salvo      Boolean @default(true) // false = número que escreveu mas não foi salvo
+  /* B7: o número como o WHATSAPP o conhece (o "wa_id" que chega da Meta).
+     No Brasil, ele às vezes vem SEM o 9 do celular ("552188110001"). Para
+     responder, usamos exatamente este, quando existe */
+  whatsapp   String?
 
   conversas Conversa[]
 
@@ -252,6 +261,14 @@ model Mensagem {
   audioUrl    String?      @map("audio_url") // ⚠️ antigo (B5): o áudio inteiro em texto. Os novos usam arquivoId
   duracao     Int? // segundos de áudio
   encaminhada Boolean      @default(false)
+
+  /* B7: o id da mensagem no WhatsApp ("wamid.HBgN..."). É por ele que a
+     Meta avisa "foi lida", e é ele que vai na citação de uma resposta.
+     @unique: a Meta às vezes manda o mesmo aviso duas vezes; com o id
+     único, a mesma mensagem nunca entra repetida */
+  whatsappId String? @unique @map("whatsapp_id")
+  // O WhatsApp recusou a entrega (número inválido, cliente bloqueou...): o motivo
+  erroEnvio  String? @map("erro_envio")
 
   // O arquivo anexado (documento, foto ou o áudio gravado). Várias
   // mensagens podem apontar para o MESMO arquivo: é o que acontece ao encaminhar
