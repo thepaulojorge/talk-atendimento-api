@@ -37,7 +37,7 @@ export async function acharConversa(req, id, incluir = {}) {
 // A mensagem + a conversa dela (já com a permissão conferida)
 export async function acharMensagem(req, id) {
   if (!idValido(id)) throw new ErroDaApi(404, "Mensagem não encontrada.");
-  const mensagem = await prisma.mensagem.findUnique({ where: { id } });
+  const mensagem = await prisma.mensagem.findUnique({ where: { id }, include: { arquivo: true } });
   if (!mensagem) throw new ErroDaApi(404, "Mensagem não encontrada.");
   const conversa = await acharConversa(req, mensagem.conversaId, { contato: true });
   return { mensagem, conversa };
@@ -53,9 +53,12 @@ function formatarDuracao(segundos = 0) {
   return `${Math.floor(segundos / 60)}:${String(segundos % 60).padStart(2, "0")}`;
 }
 
-// O "conteúdo" de uma mensagem em texto, para a auditoria (áudio vira descrição)
+/* O "conteúdo" de uma mensagem em texto, para a auditoria.
+   Áudio e arquivo viram descrição (precisa do include { arquivo: true }) */
 export function conteudoEmTexto(m) {
-  return m.tipo === "audio" ? `🎤 Áudio de ${formatarDuracao(m.duracao)}` : m.texto;
+  if (m.tipo === "audio") return `🎤 Áudio de ${formatarDuracao(m.duracao)}`;
+  if (m.tipo === "arquivo") return `📎 ${m.arquivo?.nome || "Arquivo"}`;
+  return m.texto;
 }
 
 /* Um evento no histórico ("Carla assumiu a conversa"), no formato do
@@ -75,4 +78,28 @@ export function deOndeVeio(req) {
 export function exigirId(id) {
   if (!idValido(id)) throw new ErroDaApi(400, "Id inválido.");
   return id;
+}
+
+/* Quem pode ver um ARQUIVO?
+   - quem enviou (logo depois do upload, antes de a mensagem existir)
+   - quem vê alguma mensagem com ele: de uma linha que a pessoa atende, e
+     não apagada (a supervisão vê as apagadas também, como no texto)
+   Devolve o arquivo, ou lança 404 */
+export async function acharArquivo(req, id) {
+  if (!idValido(id)) throw new ErroDaApi(404, "Arquivo não encontrado.");
+  const arquivo = await prisma.arquivo.findUnique({ where: { id } });
+  if (!arquivo) throw new ErroDaApi(404, "Arquivo não encontrado.");
+  if (arquivo.enviadoPorId === req.usuario.atendenteId) return arquivo;
+
+  const supervisao = ["supervisor", "diretoria"].includes(req.usuario.papel);
+  const linhas = await linhasDoUsuario(req.usuario);
+  const mensagem = await prisma.mensagem.findFirst({
+    where: {
+      arquivoId: id,
+      conversa: { linhaId: { in: linhas.map((l) => l.id) } }, // filtro "através" da relação
+      ...(supervisao ? {} : { apagada: false }),
+    },
+  });
+  if (!mensagem) throw new ErroDaApi(404, "Arquivo não encontrado.");
+  return arquivo;
 }

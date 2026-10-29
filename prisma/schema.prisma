@@ -47,6 +47,7 @@ enum TipoMensagem {
   audio
   nota
   sistema
+  arquivo // documento, foto... (o áudio gravado continua "audio")
 }
 
 enum Direcao {
@@ -83,6 +84,7 @@ model Atendente {
   registros         Auditoria[]
   contas            Conta[]
   puxadas           Puxada[]
+  arquivos          Arquivo[]
 
   @@map("atendentes")
 }
@@ -247,9 +249,14 @@ model Mensagem {
   horario     DateTime
   lida        Boolean      @default(false)
   texto       String?
-  audioUrl    String?      @map("audio_url")
+  audioUrl    String?      @map("audio_url") // ⚠️ antigo (B5): o áudio inteiro em texto. Os novos usam arquivoId
   duracao     Int? // segundos de áudio
   encaminhada Boolean      @default(false)
+
+  // O arquivo anexado (documento, foto ou o áudio gravado). Várias
+  // mensagens podem apontar para o MESMO arquivo: é o que acontece ao encaminhar
+  arquivoId String?  @map("arquivo_id")
+  arquivo   Arquivo? @relation(fields: [arquivoId], references: [id], onDelete: SetNull)
 
   // A conversa dona da mensagem. onDelete: Cascade = apagou a conversa,
   // as mensagens dela vão junto (a cópia fica guardada na auditoria)
@@ -280,6 +287,25 @@ model Mensagem {
   // Índice: deixa rápida a busca "todas as mensagens desta conversa, por horário"
   @@index([conversaId, horario])
   @@map("mensagens")
+}
+
+// ---------- Arquivos ----------
+// O CONTEÚDO do arquivo fica numa pasta do servidor (veja src/arquivos/disco.js).
+// Aqui no banco ficam só os dados SOBRE ele: nome, tipo, tamanho, quem enviou
+
+model Arquivo {
+  id       String   @id // também é o nome do arquivo na pasta
+  nome     String // o nome original: "orcamento.pdf"
+  tipo     String // o tipo (MIME): "application/pdf", "image/png", "audio/webm"
+  tamanho  Int // em bytes
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  enviadoPorId String?    @map("enviado_por_id")
+  enviadoPor   Atendente? @relation(fields: [enviadoPorId], references: [id], onDelete: SetNull)
+
+  mensagens Mensagem[]
+
+  @@map("arquivos")
 }
 
 // ---------- Auditoria (supervisão) ----------

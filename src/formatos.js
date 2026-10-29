@@ -47,7 +47,12 @@ export function mensagemParaFront(m, { supervisao = false } = {}) {
     id: m.id,
     tipo: m.tipo,
     texto: esconder ? null : m.texto,
-    audioUrl: esconder ? null : m.audioUrl,
+    audioUrl: esconder ? null : m.audioUrl, // só os áudios antigos (B5); os novos vêm em "arquivo"
+    // Os DADOS do arquivo. O conteúdo em si o front busca em /api/arquivos/:id
+    arquivo:
+      m.arquivo && !esconder
+        ? { id: m.arquivo.id, nome: m.arquivo.nome, tipo: m.arquivo.tipo, tamanho: m.arquivo.tamanho }
+        : null,
     duracao: m.duracao,
     horario: iso(m.horario),
     direcao: m.direcao,

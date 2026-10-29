@@ -4,6 +4,7 @@ import { prisma } from "../banco.js";
 import { exigirLogin } from "../autenticacao/middleware.js";
 import {
   ErroDaApi,
+  acharArquivo,
   acharConversa,
   acharMensagem,
   conteudoEmTexto,
@@ -17,17 +18,13 @@ import {
 export const rotasMensagens = Router();
 
 const LIMITE_TEXTO = 4096; // o mesmo limite do WhatsApp
-/* O áudio chega como texto ("data:audio/webm;base64,GkXf..."). Cerca de
-   3 MB de texto são uns 2 MB de áudio: alguns minutos de gravação.
-   ⚠️ Guardar áudio dentro do banco é provisório. Com o WhatsApp de
-   verdade (B7), os arquivos ficam num armazenamento próprio para arquivos */
-const LIMITE_AUDIO = 3_000_000;
 
 /* POST /api/conversas/:id/mensagens
-   corpo: { id, tipo: "texto"|"audio"|"nota", texto?, audioUrl?, duracao?, respostaA?, encaminhada? } */
+   corpo: { id, tipo: "texto"|"nota"|"audio"|"arquivo", texto?, arquivoId?, duracao?, respostaA?, encaminhada? }
+   Áudio e arquivo: o arquivo já foi enviado antes (POST /api/arquivos) */
 rotasMensagens.post("/conversas/:id/mensagens", exigirLogin, async (req, res) => {
   const conversa = await acharConversa(req, req.params.id);
-  const { id, tipo, texto, audioUrl, duracao, respostaA, encaminhada } = req.body ?? {};
+  const { id, tipo, texto, arquivoId, duracao, respostaA, encaminhada } = req.body ?? {};
   exigirId(id);
 
   // ---------- 1. Validar o conteúdo ----------
@@ -36,11 +33,13 @@ rotasMensagens.post("/conversas/:id/mensagens", exigirLogin, async (req, res) =>
     const limpo = typeof texto === "string" ? texto.trim() : "";
     if (!limpo || limpo.length > LIMITE_TEXTO) throw new ErroDaApi(400, `A mensagem deve ter de 1 a ${LIMITE_TEXTO} caracteres.`);
     conteudo.texto = limpo;
-  } else if (tipo === "audio") {
-    const valido = typeof audioUrl === "string" && audioUrl.startsWith("data:audio/") && audioUrl.length <= LIMITE_AUDIO;
-    if (!valido) throw new ErroDaApi(400, "Áudio inválido ou grande demais.");
-    conteudo.audioUrl = audioUrl;
-    conteudo.duracao = Number.isInteger(duracao) && duracao >= 0 && duracao <= 3600 ? duracao : 0;
+  } else if (tipo === "audio" || tipo === "arquivo") {
+    /* acharArquivo confere se a pessoa pode usar este arquivo: foi ela que
+       enviou, ou ele está numa conversa que ela vê (encaminhar) */
+    const arquivo = await acharArquivo(req, arquivoId);
+    if (tipo === "audio" && !arquivo.tipo.startsWith("audio/")) throw new ErroDaApi(400, "Este arquivo não é um áudio.");
+    conteudo.arquivoId = arquivo.id;
+    if (tipo === "audio") conteudo.duracao = Number.isInteger(duracao) && duracao >= 0 && duracao <= 3600 ? duracao : 0;
   } else {
     throw new ErroDaApi(400, "Tipo de mensagem inválido.");
   }

@@ -176,7 +176,7 @@ rotasConversas.delete("/conversas/:id/etiquetas/:etiquetaId", async (req, res) =
 rotasConversas.delete("/conversas/:id", async (req, res) => {
   const conversa = await acharConversa(req, req.params.id, {
     contato: true,
-    mensagens: { orderBy: { horario: "asc" }, include: { autor: true } },
+    mensagens: { orderBy: { horario: "asc" }, include: { autor: true, arquivo: true } },
   });
   const nome = nomeDaConversa(conversa);
 

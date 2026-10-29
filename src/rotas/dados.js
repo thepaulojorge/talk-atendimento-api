@@ -39,7 +39,8 @@ rotasDados.get("/dados", exigirLogin, async (req, res) => {
         where: { linhaId: { in: idsLinhas } },
         include: {
           etiquetas: { select: { id: true } },
-          mensagens: { orderBy: { horario: "asc" } },
+          // Cada mensagem com o seu arquivo (nome, tipo, tamanho), se tiver
+          mensagens: { orderBy: { horario: "asc" }, include: { arquivo: true } },
         },
       }),
       supervisao ? prisma.auditoria.findMany({ orderBy: { quando: "asc" } }) : [],

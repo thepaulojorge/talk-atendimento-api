@@ -5,8 +5,10 @@
    banco de uma empresa.
 
    Em inglês, isto se chama "seed" (semente): os dados iniciais do banco */
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import bcrypt from "bcryptjs";
+import { caminhoDe } from "../arquivos/disco.js";
+
 
 const ARQUIVO = new URL("./dados.json", import.meta.url);
 
@@ -62,6 +64,14 @@ export async function popularComExemplos(prisma, log = () => {}) {
   await prisma.conta.deleteMany();
   await prisma.auditoria.deleteMany();
   await prisma.mensagem.deleteMany();
+
+  /* Os arquivos enviados: primeiro o conteúdo na pasta, depois o registro.
+     Apagamos SÓ os arquivos que o banco conhece, um por um (e nunca a pasta
+     inteira: se o PASTA_ARQUIVOS apontasse para o lugar errado, apagar a
+     pasta toda seria um desastre). force: se já não existir, tudo bem */
+  const arquivos = await prisma.arquivo.findMany({ select: { id: true } });
+  for (const { id } of arquivos) await rm(caminhoDe(id), { force: true });
+  await prisma.arquivo.deleteMany();
   await prisma.conversa.deleteMany();
   await prisma.linha.deleteMany();
   await prisma.escala.deleteMany();

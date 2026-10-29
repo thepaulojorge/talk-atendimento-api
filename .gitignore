@@ -9,3 +9,8 @@ npm-debug.log*
 
 # Código gerado pelo Prisma (cada um gera com "npm install" ou "npm run banco:gerar")
 src/generated/
+
+# Arquivos enviados pelo app (fotos, PDFs, áudios de clientes): ficam só no servidor.
+# A "/" no começo: só a pasta "arquivos" da RAIZ do projeto. Sem ela, o Git
+# ignoraria também a src/arquivos (onde está o código que cuida deles)
+/arquivos/
