@@ -1,8 +1,8 @@
-/* Os 3 turnos do dia, os mesmos do front. "fim" é exclusivo: às 14:00 já é tarde */
+/* Os 3 turnos do dia, os mesmos do front. "fim" é exclusivo: às 15:00 já é tarde */
 export const TURNOS = [
-  { id: "manha", nome: "Manhã", inicio: 6, fim: 14 },
-  { id: "tarde", nome: "Tarde", inicio: 14, fim: 22 },
-  { id: "noite", nome: "Noite", inicio: 22, fim: 6 },
+  { id: "manha", nome: "Manhã", inicio: 7, fim: 15 },
+  { id: "tarde", nome: "Tarde", inicio: 15, fim: 23 },
+  { id: "noite", nome: "Noite", inicio: 23, fim: 7 },
 ];
 
 /* A HORA EM BRASÍLIA. O servidor do Render roda no horário de Londres
@@ -24,7 +24,7 @@ export function turnoDe(data) {
   const hora = horaEmBrasilia(data);
   return TURNOS.find((t) =>
     t.inicio < t.fim
-      ? hora >= t.inicio && hora < t.fim // turno normal: 6h às 14h
-      : hora >= t.inicio || hora < t.fim // passa da meia-noite: 22h às 6h
+      ? hora >= t.inicio && hora < t.fim // turno normal: 7h às 15h
+      : hora >= t.inicio || hora < t.fim // passa da meia-noite: 23h às 7h
   );
 }
