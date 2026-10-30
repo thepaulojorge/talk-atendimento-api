@@ -42,7 +42,11 @@ function assinaturaConfere(corpo, cabecalho = "") {
 }
 
 rotasWhatsapp.post("/whatsapp/webhook", express.raw({ type: () => true, limit: "1mb" }), (req, res) => {
+  /* Anotações nos LOGS (no Render: aba "Logs"). Só o tipo do aviso,
+     nunca o conteúdo das mensagens: log não é lugar de conversa de cliente */
+  console.log("📩 WhatsApp: aviso recebido da Meta");
   if (!assinaturaConfere(req.body, req.get("X-Hub-Signature-256"))) {
+    console.warn("⚠️ WhatsApp: assinatura inválida. Confira o WHATSAPP_SEGREDO_APP (Configurações do app > Básico > Chave secreta)");
     return res.status(401).json({ erro: "Assinatura inválida." });
   }
 

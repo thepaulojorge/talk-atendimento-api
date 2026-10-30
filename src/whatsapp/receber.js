@@ -35,6 +35,10 @@ export async function processarAviso(aviso) {
         continue;
       }
 
+      const quantas = valor.messages?.length ?? 0;
+      const status = valor.statuses?.length ?? 0;
+      console.log(`✅ WhatsApp: linha ${linha.id}: ${quantas} mensagem(ns) nova(s), ${status} atualização(ões) de status`);
+
       for (const mensagem of valor.messages ?? []) {
         const perfil = valor.contacts?.find((c) => c.wa_id === mensagem.from);
         await receberMensagem(linha, mensagem, perfil);
