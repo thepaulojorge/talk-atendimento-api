@@ -26,7 +26,14 @@ const VALIDADE = "12h";
 export function criarToken(sessao) {
   // "sub" (subject = "de quem é"): o nome padrão do JWT para o dono do token
   return jwt.sign(
-    { sub: sessao.atendenteId, email: sessao.email, estacaoId: sessao.estacaoId, turnoId: sessao.turnoId },
+    {
+      sub: sessao.atendenteId,
+      email: sessao.email,
+      estacaoId: sessao.estacaoId,
+      turnoId: sessao.turnoId,
+      // Entrou pelo botão da demonstração? Fica gravado no token (e a assinatura impede de "tirar")
+      ...(sessao.demo ? { demo: true } : {}),
+    },
     SEGREDO,
     { expiresIn: VALIDADE }
   );

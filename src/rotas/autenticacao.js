@@ -29,9 +29,10 @@ const limiteDeTentativas = rateLimit({
 const HASH_FALSO = bcrypt.hashSync("nenhuma-conta-tem-esta-senha", 10);
 
 // Dá certo? Responde com o token e a sessão. Ninguém na escala? Explica
-async function responderComSessao(res, conta) {
+async function responderComSessao(res, conta, { demo = false } = {}) {
   const { sessao, erro } = await resolverSessao(conta);
   if (erro) return res.status(403).json({ erro });
+  if (demo) sessao.demo = true;
   /* Login novo, começo limpo: as estações puxadas no turno anterior
      não continuam puxadas. Quem quiser, puxa de novo */
   await prisma.puxada.deleteMany({ where: { atendenteId: sessao.atendenteId } });
@@ -74,7 +75,17 @@ rotasAutenticacao.post("/demonstracao", limiteDeTentativas, async (req, res) => 
   const conta = await prisma.conta.findUnique({ where: { email: process.env.CONTA_DEMONSTRACAO || "" } });
   if (!conta?.ativa) return res.status(404).json({ erro: "A conta de demonstração não existe." });
 
-  await responderComSessao(res, conta);
+  /* A estação da demonstração está ligada ao WhatsApp de verdade? Então
+     não abre: o visitante cairia numa estação vazia (as conversas reais
+     ficam escondidas dele) e não entenderia nada. Melhor avisar */
+  if (conta.estacaoId) {
+    const linha = await prisma.linha.findUnique({ where: { estacaoId: conta.estacaoId } });
+    if (linha?.whatsappId) {
+      return res.status(403).json({ erro: "A demonstração está indisponível no momento: a estação dela está ligada ao WhatsApp de verdade." });
+    }
+  }
+
+  await responderComSessao(res, conta, { demo: true });
 });
 
 /* POST /api/auth/sair: solta as estações puxadas. O token em si não

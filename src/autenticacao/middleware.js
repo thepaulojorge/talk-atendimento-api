@@ -38,6 +38,7 @@ export async function exigirLogin(req, res, next) {
     email: dados.email,
     estacaoId: dados.estacaoId,
     turnoId: dados.turnoId,
+    demo: dados.demo === true, // entrou pela demonstração (ver autenticacao/linhas.js)
   };
   next(); // pode passar: segue para a rota
 }

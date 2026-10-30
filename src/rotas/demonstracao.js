@@ -18,8 +18,15 @@ rotasDemonstracao.use("/demonstracao", exigirLogin, (req, res, next) => {
 });
 
 /* POST /api/demonstracao/restaurar
-   ⚠️ Volta o banco INTEIRO ao exemplo, para todo mundo que estiver usando */
+   ⚠️ Volta o banco INTEIRO ao exemplo, para todo mundo que estiver usando.
+   Por isso: só a DIRETORIA, e nunca com uma linha ligada ao WhatsApp de
+   verdade (apagaria as conversas reais de clientes junto) */
 rotasDemonstracao.post("/demonstracao/restaurar", async (req, res) => {
+  if (req.usuario.papel !== "diretoria") throw new ErroDaApi(403, "Só a diretoria pode restaurar os dados de exemplo.");
+  const linhasReais = await prisma.linha.count({ where: { whatsappId: { not: null } } });
+  if (linhasReais > 0) {
+    throw new ErroDaApi(409, "Há linhas ligadas ao WhatsApp de verdade. Tire o \"ID na Meta\" delas nas Configurações antes de restaurar.");
+  }
   await popularComExemplos(prisma);
   res.status(204).end();
   avisarRecarregar(); // todo mundo busca os exemplos de novo

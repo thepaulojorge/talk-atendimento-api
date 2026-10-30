@@ -50,6 +50,7 @@ export function iniciarTempoReal(servidorHttp, origensPermitidas) {
         papel: atendente.papel,
         estacaoId: dados.estacaoId,
         turnoId: dados.turnoId,
+        demo: dados.demo === true, // a demonstração não entra nas salas das linhas reais
       };
       next(); // pode entrar
     } catch {
