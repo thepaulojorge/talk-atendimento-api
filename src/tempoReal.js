@@ -11,11 +11,11 @@
    - "linha:<id>"       uma por linha que a pessoa atende (a dela + as puxadas)
    - "atendente:<id>"   só dela (para avisos pessoais, como "suas salas mudaram")
    - "supervisao"       supervisão e diretoria (recebem a auditoria)
-   - "todos"            todo mundo logado (etiquetas, estações, contatos novos) */
+   - "todos"            todo mundo logado (etiquetas, estações, contatos, respostas rápidas) */
 import { Server } from "socket.io";
 import { prisma } from "./banco.js";
 import { lerToken } from "./autenticacao/tokens.js";
-import { linhasDoUsuario } from "./autenticacao/linhas.js";
+import { filtroDeContatos, linhasDoUsuario } from "./autenticacao/linhas.js";
 import { auditoriaParaFront, conversaParaFront, estacaoParaFront } from "./formatos.js";
 
 let io = null; // o servidor Socket.io (criado uma vez, no iniciarTempoReal)
@@ -132,11 +132,30 @@ export const avisarEtiquetas = seguro(async function avisarEtiquetas() {
   io.to("todos").emit("etiquetas", await prisma.etiqueta.findMany({ orderBy: { id: "asc" } }));
 });
 
-// Contato novo (iniciado pelo número): todo mundo passa a conhecê-lo
+// Contato novo ou editado: todo mundo passa a conhecê-lo (ou vê o nome novo)
 export const avisarContato = seguro(async function avisarContato(contatoId) {
   if (!io) return;
   const contato = await prisma.contato.findUnique({ where: { id: contatoId } });
-  if (contato) io.to("todos").emit("contato", contato);
+  if (!contato) return;
+  /* Quem entrou pela DEMONSTRAÇÃO não recebe clientes reais (a mesma regra
+     do /api/dados). A pergunta é feita ao banco uma vez só */
+  const visivelNaDemo = await prisma.contato.count({
+    where: { id: contatoId, ...filtroDeContatos({ demo: true }) },
+  });
+  const conexoes = await io.in("todos").fetchSockets();
+  for (const conexao of conexoes) {
+    if (conexao.data.usuario.demo && !visivelNaDemo) continue;
+    conexao.emit("contato", contato);
+  }
+});
+
+/* As respostas rápidas mudaram (alguém criou, editou ou apagou uma):
+   manda a lista inteira de novo. São poucas, e assim a tela de todos
+   fica igual à do banco, sem conta de "o que mudou" */
+export const avisarRespostas = seguro(async function avisarRespostas() {
+  if (!io) return;
+  const respostas = await prisma.respostaRapida.findMany();
+  io.to("todos").emit("respostas", respostas);
 });
 
 // Alguém puxou ou soltou uma estação: a tela "Estações" de todos se atualiza

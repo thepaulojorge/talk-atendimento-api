@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { prisma } from "../banco.js";
 import { exigirLogin } from "../autenticacao/middleware.js";
-import { linhasDoUsuario } from "../autenticacao/linhas.js";
+import { filtroDeContatos, linhasDoUsuario } from "../autenticacao/linhas.js";
 import { auditoriaParaFront, conversaParaFront, estacaoParaFront, linhaParaFront } from "../formatos.js";
 
 /* GET /api/dados: TUDO o que o front precisa para abrir.
    Cada pessoa recebe só o que pode ver:
    - conversas: só as das LINHAS que ela atende (ver autenticacao/linhas.js)
-   - auditoria e textos apagados: só supervisão e diretoria */
+   - auditoria e textos apagados: só supervisão e diretoria
+   - contatos: na demonstração, sem os clientes reais (ver autenticacao/linhas.js) */
 export const rotasDados = Router();
 
 /* exigirLogin vem ANTES da função da rota: sem um token válido, o
@@ -30,7 +31,8 @@ rotasDados.get("/dados", exigirLogin, async (req, res) => {
         include: { puxadas: true },
         orderBy: { id: "asc" },
       }),
-      prisma.contato.findMany({ orderBy: { nome: "asc" } }),
+      // Os contatos: todos, menos os clientes reais para quem entrou pela demonstração
+      prisma.contato.findMany({ where: filtroDeContatos(req.usuario), orderBy: { nome: "asc" } }),
       prisma.etiqueta.findMany({ orderBy: { id: "asc" } }),
       prisma.respostaRapida.findMany(),
       /* where com "in": só as conversas cujo linhaId está na lista.

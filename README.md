@@ -206,6 +206,9 @@ Todas começam com `/api`. As marcadas com 🔒 precisam do token de login (`Aut
 | POST | `/arquivos` | Enviar um arquivo (o corpo é o próprio arquivo, até 10 MB) |
 | GET | `/arquivos/:id` | Abrir ou baixar (`?baixar`) um arquivo |
 | PATCH | `/etiquetas/:id` | Renomear uma etiqueta personalizável |
+| POST | `/respostas` | Criar uma resposta rápida (qualquer pessoa logada) |
+| PUT / DELETE | `/respostas/:atalho` | Editar (inclusive o atalho) ou apagar uma resposta rápida |
+| PATCH | `/contatos/:id` | Editar o nome e o número de um contato |
 | POST / DELETE | `/estacoes/:id/puxar` | Puxar ou soltar uma estação (atendentes) |
 | GET | `/admin` | Tudo o que a tela de Configurações mostra (supervisão e diretoria) |
 | POST / PUT | `/admin/estacoes` (`/:id`) | Criar ou editar uma estação: nome, sigla, e-mail, senha, número, ID na Meta, login bloqueado |
@@ -221,7 +224,7 @@ Todas começam com `/api`. As marcadas com 🔒 precisam do token de login (`Aut
 | 401 | Sem login, ou login vencido |
 | 403 | Logado, mas sem permissão para isso |
 | 404 | Não existe, **ou você não pode ver** (de propósito: assim ninguém descobre o que existe) |
-| 409 | Já existe (id repetido) |
+| 409 | Já existe (id, atalho ou número repetido) |
 | 413 | Arquivo grande demais |
 | 502 | O WhatsApp recusou (a mensagem explica o motivo) |
 

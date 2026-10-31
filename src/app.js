@@ -22,6 +22,8 @@ import { rotasEtiquetas } from "./rotas/etiquetas.js";
 import { rotasDemonstracao } from "./rotas/demonstracao.js";
 import { rotasArquivos } from "./rotas/arquivos.js";
 import { rotasWhatsapp } from "./rotas/whatsapp.js";
+import { rotasRespostas } from "./rotas/respostas.js";
+import { rotasContatos } from "./rotas/contatos.js";
 
 export const app = express();
 
@@ -58,6 +60,8 @@ app.use("/api", rotasAdmin); // Configurações: estações, números e nome da 
 app.use("/api", rotasMensagens); // enviar, editar e apagar mensagens
 app.use("/api", rotasConversas); // assumir, transferir, fixar, etiquetas, excluir...
 app.use("/api", rotasEtiquetas); // renomear etiquetas
+app.use("/api", rotasRespostas); // respostas rápidas: criar, editar e apagar (todos podem)
+app.use("/api", rotasContatos); // editar o nome e o número de um contato
 app.use("/api", rotasDemonstracao); // restaurar e simular (só no modo demonstração)
 app.use("/api", rotasArquivos); // enviar e abrir arquivos (fotos, PDFs, áudios)
 

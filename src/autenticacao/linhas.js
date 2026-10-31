@@ -22,3 +22,13 @@ export async function linhasDoUsuario(usuario) {
   const estacoes = [usuario.estacaoId, ...puxadas.map((p) => p.estacaoId)];
   return prisma.linha.findMany({ where: { estacaoId: { in: estacoes }, ...soSimuladas } });
 }
+
+/* E OS CONTATOS? A lista de contatos é uma só para todos. Mas a
+   DEMONSTRAÇÃO não pode ver os clientes REAIS: nem os que chegaram pelo
+   WhatsApp (whatsapp preenchido), nem os que já conversaram por uma linha
+   real (o número pode ter sido editado depois).
+   Devolve o "where" do Prisma: {} (todos) ou o filtro da demonstração */
+export function filtroDeContatos(usuario) {
+  if (!usuario.demo) return {};
+  return { whatsapp: null, conversas: { none: { linha: { whatsappId: { not: null } } } } };
+}
