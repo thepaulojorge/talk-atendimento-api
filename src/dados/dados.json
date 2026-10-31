@@ -2,17 +2,17 @@
   "atendentes": [
     {
       "id": "at1",
-      "nome": "Paulo",
+      "nome": "Estação 01",
       "papel": "atendente"
     },
     {
       "id": "at2",
-      "nome": "Carla",
+      "nome": "Estação 02",
       "papel": "atendente"
     },
     {
       "id": "at3",
-      "nome": "Rodrigo",
+      "nome": "Estação 03",
       "papel": "atendente"
     },
     {
@@ -30,22 +30,17 @@
     {
       "id": "est01",
       "nome": "Estação 01",
-      "escala": {
-        "manha": "at1",
-        "tarde": "at2",
-        "noite": "at3"
-      },
       "sigla": "E01"
     },
     {
       "id": "est02",
       "nome": "Estação 02",
-      "escala": {
-        "manha": "at2",
-        "tarde": "at3",
-        "noite": "at1"
-      },
       "sigla": "E02"
+    },
+    {
+      "id": "est03",
+      "nome": "Estação 03",
+      "sigla": "E03"
     }
   ],
   "linhas": [
@@ -59,6 +54,12 @@
       "id": "linha-e02",
       "numero": "5521990000002",
       "estacaoId": "est02",
+      "papel": null
+    },
+    {
+      "id": "linha-e03",
+      "numero": "5521990000003",
+      "estacaoId": "est03",
       "papel": null
     },
     {
@@ -315,7 +316,7 @@
         {
           "id": "m5b",
           "tipo": "sistema",
-          "texto": "Carla assumiu a conversa",
+          "texto": "Estação 02 assumiu a conversa",
           "horario": "2026-10-09T10:20:00",
           "direcao": "interna",
           "lida": true,
@@ -354,7 +355,7 @@
         {
           "id": "m7b",
           "tipo": "sistema",
-          "texto": "Carla marcou a conversa como resolvida",
+          "texto": "Estação 02 marcou a conversa como resolvida",
           "horario": "2026-10-09T10:32:00",
           "direcao": "interna",
           "lida": true,

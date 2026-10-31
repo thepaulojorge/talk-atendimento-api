@@ -68,7 +68,7 @@ export function evento(id, conversaId, texto, horario) {
   return { id, conversaId, tipo: "sistema", direcao: "interna", texto, horario, lida: true };
 }
 
-/* De onde veio a ação, para a auditoria: "Paulo, Estação 01, turno da manhã".
+/* De onde veio a ação, para a auditoria: "Estação 01 · Tarde".
    Vem do TOKEN (o servidor que assinou), nunca do corpo do pedido */
 export function deOndeVeio(req) {
   return { autorId: req.usuario.atendenteId, estacaoId: req.usuario.estacaoId ?? null, turno: req.usuario.turnoId ?? null };

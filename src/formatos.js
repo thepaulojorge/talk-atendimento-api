@@ -10,13 +10,10 @@
 const iso = (data) => (data ? data.toISOString() : null);
 
 export function estacaoParaFront(estacao) {
-  // As linhas da escala viram o objeto { manha: "at1", tarde: "at2", noite: "at3" }
-  const escala = Object.fromEntries(estacao.escala.map((linha) => [linha.turno, linha.atendenteId]));
   return {
     id: estacao.id,
     nome: estacao.nome,
     sigla: estacao.sigla,
-    escala,
     // Quem está puxando esta estação agora (ids dos atendentes)
     puxadaPor: (estacao.puxadas || []).map((p) => p.atendenteId),
   };

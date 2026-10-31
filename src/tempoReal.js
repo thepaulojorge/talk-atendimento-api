@@ -49,7 +49,7 @@ export function iniciarTempoReal(servidorHttp, origensPermitidas) {
         atendenteId: atendente.id,
         papel: atendente.papel,
         estacaoId: dados.estacaoId,
-        turnoId: dados.turnoId,
+        turnoId: dados.turnoId ?? null,
         demo: dados.demo === true, // a demonstração não entra nas salas das linhas reais
       };
       next(); // pode entrar
@@ -142,7 +142,7 @@ export const avisarContato = seguro(async function avisarContato(contatoId) {
 // Alguém puxou ou soltou uma estação: a tela "Estações" de todos se atualiza
 export const avisarEstacoes = seguro(async function avisarEstacoes() {
   if (!io) return;
-  const estacoes = await prisma.estacao.findMany({ include: { escala: true, puxadas: true }, orderBy: { id: "asc" } });
+  const estacoes = await prisma.estacao.findMany({ include: { puxadas: true }, orderBy: { id: "asc" } });
   io.to("todos").emit("estacoes", estacoes.map(estacaoParaFront));
 });
 

@@ -28,13 +28,13 @@ const limiteDeTentativas = rateLimit({
    alguém medindo o tempo descobriria quais e-mails existem */
 const HASH_FALSO = bcrypt.hashSync("nenhuma-conta-tem-esta-senha", 10);
 
-// Dá certo? Responde com o token e a sessão. Ninguém na escala? Explica
+// Dá certo? Responde com o token e a sessão. Conta sem estação? Explica
 async function responderComSessao(res, conta, { demo = false } = {}) {
   const { sessao, erro } = await resolverSessao(conta);
   if (erro) return res.status(403).json({ erro });
   if (demo) sessao.demo = true;
-  /* Login novo, começo limpo: as estações puxadas no turno anterior
-     não continuam puxadas. Quem quiser, puxa de novo */
+  /* Login novo, começo limpo: as estações puxadas antes não continuam
+     puxadas. Quem quiser, puxa de novo */
   await prisma.puxada.deleteMany({ where: { atendenteId: sessao.atendenteId } });
   // Tempo real: se a pessoa estava aberta em outro navegador, as salas dela se ajustam
   atualizarSalas(sessao.atendenteId);

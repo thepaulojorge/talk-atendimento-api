@@ -1,32 +1,24 @@
 /* QUEM ENTRA COM ESTA CONTA?
-   - Conta pessoal (supervisão, diretoria): sempre a mesma pessoa
-   - Conta de estação: a pessoa escalada para o turno de AGORA
+   - Conta de ESTAÇÃO: a própria estação. O "atendente" dela tem o nome da
+     estação ("Estação 01"): é esse nome que aparece nas mensagens e na
+     auditoria. Não importa quem está sentado ali, nem a que horas chegou:
+     o horário do login só define o TURNO que fica registrado (turnos.js)
+   - Conta PESSOAL (supervisão, diretoria): sempre a mesma pessoa
    Devolve { sessao } quando dá certo, ou { erro } explicando o problema */
-import { prisma } from "../banco.js";
 import { turnoDe } from "./turnos.js";
 
 export async function resolverSessao(conta) {
-  const agora = new Date();
-
-  if (conta.tipo === "pessoal") {
-    return {
-      sessao: { email: conta.email, atendenteId: conta.atendenteId, estacaoId: null, turnoId: null, desde: agora },
-    };
+  if (!conta.atendenteId) {
+    return { erro: "Esta conta não está ligada a nenhuma estação. Fale com a supervisão." };
   }
-
-  const turno = turnoDe(agora);
-  // findUnique com a chave dupla da tabela de escala: (estação + turno)
-  const linha = await prisma.escala.findUnique({
-    where: { estacaoId_turno: { estacaoId: conta.estacaoId, turno: turno.id } },
-    include: { estacao: true },
-  });
-
-  if (!linha?.atendenteId) {
-    const estacao = linha?.estacao?.nome || "estação";
-    return { erro: `Ninguém está escalado na ${estacao} no turno da ${turno.nome.toLowerCase()}. Fale com a diretoria.` };
-  }
-
   return {
-    sessao: { email: conta.email, atendenteId: linha.atendenteId, estacaoId: conta.estacaoId, turnoId: turno.id, desde: agora },
+    sessao: {
+      email: conta.email,
+      atendenteId: conta.atendenteId,
+      estacaoId: conta.tipo === "estacao" ? conta.estacaoId : null,
+      // O turno do horário do login (só nas estações): fica registrado na auditoria
+      turnoId: conta.tipo === "estacao" ? turnoDe(new Date()).id : null,
+      desde: new Date(),
+    },
   };
 }

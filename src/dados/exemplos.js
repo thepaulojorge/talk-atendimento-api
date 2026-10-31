@@ -79,7 +79,6 @@ export async function popularComExemplos(prisma, log = () => {}) {
     (await prisma.linha.findMany({ where: { whatsappId: { not: null } } })).map((l) => [l.id, l.whatsappId])
   );
   await prisma.linha.deleteMany();
-  await prisma.escala.deleteMany();
   await prisma.estacao.deleteMany();
   await prisma.contato.deleteMany();
   await prisma.etiqueta.deleteMany();
@@ -90,40 +89,61 @@ export async function popularComExemplos(prisma, log = () => {}) {
   log("🌱 Colocando os dados de exemplo...");
   await prisma.configuracao.create({ data: { id: 1, nomeMarca: "Talk Atendimento" } });
 
-  // createMany: várias linhas num comando só (bem mais rápido que um por um)
-  await prisma.atendente.createMany({ data: dados.atendentes });
-
-  for (const estacao of dados.estacoes) {
-    await prisma.estacao.create({
-      data: {
-        id: estacao.id,
-        nome: estacao.nome,
-        sigla: estacao.sigla,
-        // "create" dentro de "create": cria a estação JÁ com as linhas da escala
-        escala: {
-          create: Object.entries(estacao.escala).map(([turno, atendenteId]) => ({ turno, atendenteId })),
-        },
-      },
+  /* AS ESTAÇÕES. O dados.json traz as 3 primeiras (as que têm conversas
+     de exemplo); as outras (até o total abaixo) são geradas aqui, todas iguais.
+     Cada estação tem: a estação, o "atendente" com o nome dela (o autor
+     das mensagens), a conta de login e a linha (o número de WhatsApp) */
+  /* Quantas estações de exemplo: ESTACOES_EXEMPLO no .env (de 3 a 99).
+     Sem ela, 10: a demonstração fica leve. Para ver o sistema em escala
+     real, ESTACOES_EXEMPLO=70 e "npm run banco:popular" de novo */
+  const TOTAL_ESTACOES = Math.min(99, Math.max(3, Number(process.env.ESTACOES_EXEMPLO) || 10));
+  const doJson = new Map(dados.estacoes.map((e) => [e.id, e]));
+  const estacoes = [];
+  for (let n = 1; n <= TOTAL_ESTACOES; n++) {
+    const dois = String(n).padStart(2, "0"); // 7 -> "07"
+    const id = `est${dois}`;
+    estacoes.push({
+      id,
+      nome: doJson.get(id)?.nome ?? `Estação ${dois}`,
+      sigla: doJson.get(id)?.sigla ?? `E${dois}`,
+      // As 3 primeiras usam os atendentes do dados.json (at1, at2, at3), que já são autores de mensagens
+      atendenteId: n <= 3 ? `at${n}` : `at-${id}`,
+      email: `estacao${dois}@talk.com`,
+      linhaId: `linha-e${dois}`,
+      numero: `55219900000${dois}`.slice(0, 13), // 5521990000001 ... 5521990000070
     });
   }
+
+  // createMany: várias linhas num comando só (bem mais rápido que um por um)
+  await prisma.atendente.createMany({
+    data: [
+      ...dados.atendentes,
+      ...estacoes.filter((e) => !e.atendenteId.match(/^at\d$/)).map((e) => ({ id: e.atendenteId, nome: e.nome, papel: "atendente" })),
+    ],
+  });
+  await prisma.estacao.createMany({ data: estacoes.map((e) => ({ id: e.id, nome: e.nome, sigla: e.sigla })) });
 
   /* CONTAS DE DEMONSTRAÇÃO. A senha "demo123" vira um hash: um texto
      como "$2b$10$N9qo8uLOickgx2ZMRZoMy..." que não dá para desfazer.
      O 10 é o "custo": quanto maior, mais lento embaralhar, e mais lento
-     para um invasor testar senhas. 10 é o padrão recomendado */
+     para um invasor testar senhas. 10 é o padrão recomendado.
+     Um hash só para todas: embaralhar 72 vezes deixaria o "popular" lento */
   const senhaHash = await bcrypt.hash("demo123", 10);
   await prisma.conta.createMany({
     data: [
-      { email: "estacao01@talk.com", senhaHash, tipo: "estacao", estacaoId: "est01" },
-      { email: "estacao02@talk.com", senhaHash, tipo: "estacao", estacaoId: "est02" },
+      ...estacoes.map((e) => ({ email: e.email, senhaHash, tipo: "estacao", estacaoId: e.id, atendenteId: e.atendenteId })),
       { email: "supervisao@talk.com", senhaHash, tipo: "pessoal", atendenteId: "at4" },
       { email: "diretoria@talk.com", senhaHash, tipo: "pessoal", atendenteId: "at5" },
     ],
   });
 
-  // As linhas (números de WhatsApp): uma por estação, mais as exclusivas
+  // As linhas (números de WhatsApp): uma por estação, mais as exclusivas (supervisão e diretoria)
+  const exclusivas = dados.linhas.filter((l) => !l.estacaoId);
   await prisma.linha.createMany({
-    data: dados.linhas.map((l) => ({ ...l, whatsappId: ligadas.get(l.id) ?? null })),
+    data: [
+      ...estacoes.map((e) => ({ id: e.linhaId, numero: e.numero, estacaoId: e.id, papel: null })),
+      ...exclusivas,
+    ].map((l) => ({ ...l, whatsappId: ligadas.get(l.id) ?? null })),
   });
 
   await prisma.contato.createMany({ data: dados.contatos.map((c) => ({ ...c, salvo: c.salvo !== false })) });

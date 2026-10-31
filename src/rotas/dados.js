@@ -25,9 +25,9 @@ rotasDados.get("/dados", exigirLogin, async (req, res) => {
     await Promise.all([
       prisma.configuracao.findUnique({ where: { id: 1 } }),
       prisma.atendente.findMany({ orderBy: { id: "asc" } }),
-      // As estações vêm com a escala e QUEM está puxando cada uma (para a tela "Estações")
+      // As estações vêm com QUEM está puxando cada uma (para a tela "Estações")
       prisma.estacao.findMany({
-        include: { escala: true, puxadas: { include: { atendente: true } } },
+        include: { puxadas: true },
         orderBy: { id: "asc" },
       }),
       prisma.contato.findMany({ orderBy: { nome: "asc" } }),

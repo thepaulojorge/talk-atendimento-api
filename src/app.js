@@ -15,7 +15,7 @@ import { rotasDados } from "./rotas/dados.js";
 import { rotasAutenticacao } from "./rotas/autenticacao.js";
 import { rotasPublico } from "./rotas/publico.js";
 import { rotasEstacoes } from "./rotas/estacoes.js";
-import { rotasConfiguracoes } from "./rotas/configuracoes.js";
+import { rotasAdmin } from "./rotas/admin.js";
 import { rotasMensagens } from "./rotas/mensagens.js";
 import { rotasConversas } from "./rotas/conversas.js";
 import { rotasEtiquetas } from "./rotas/etiquetas.js";
@@ -53,7 +53,7 @@ app.use("/api", rotasPublico);
 app.use("/api/auth", rotasAutenticacao);
 app.use("/api", rotasDados); // protegida: exige login (ver rotas/dados.js)
 app.use("/api", rotasEstacoes); // puxar e soltar estações (atendentes)
-app.use("/api", rotasConfiguracoes); // configurações da empresa (diretoria)
+app.use("/api", rotasAdmin); // Configurações: estações, números e nome da empresa (supervisão e diretoria)
 // B5: as rotas que GRAVAM. Mensagens antes de conversas: as duas começam com /conversas
 app.use("/api", rotasMensagens); // enviar, editar e apagar mensagens
 app.use("/api", rotasConversas); // assumir, transferir, fixar, etiquetas, excluir...

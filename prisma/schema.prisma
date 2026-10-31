@@ -26,12 +26,6 @@ enum Papel {
   diretoria
 }
 
-enum Turno {
-  manha
-  tarde
-  noite
-}
-
 enum TipoConversa {
   contato
   grupo
@@ -56,7 +50,15 @@ enum Direcao {
   interna // nota ou evento: só a equipe vê
 }
 
-// Conta de ESTAÇÃO (quem entra depende do turno) ou PESSOAL (uma pessoa só)
+// O turno em que a pessoa ENTROU (manhã 7h-15h, tarde 15h-23h, noite 23h-7h).
+// Só um registro: não decide quem entra (ver src/autenticacao/turnos.js)
+enum Turno {
+  manha
+  tarde
+  noite
+}
+
+// Conta de ESTAÇÃO (o login de uma estação) ou PESSOAL (supervisão, diretoria)
 enum TipoConta {
   estacao
   pessoal
@@ -80,7 +82,6 @@ model Atendente {
   conversas         Conversa[]
   mensagens         Mensagem[]  @relation("autor")
   mensagensApagadas Mensagem[]  @relation("apagadaPor")
-  escalas           Escala[]
   registros         Auditoria[]
   contas            Conta[]
   puxadas           Puxada[]
@@ -92,8 +93,7 @@ model Atendente {
 model Estacao {
   id      String   @id
   nome    String
-  sigla   String // "E01": a marca curta que aparece na lista de conversas
-  escala  Escala[]
+  sigla   String  @unique // "E01": a marca curta que aparece na lista de conversas
   contas  Conta[]
   linha   Linha? // o número de WhatsApp desta estação
   puxadas Puxada[]
@@ -153,27 +153,15 @@ model Conta {
   ativa     Boolean   @default(true) // false = conta bloqueada (sem apagar o histórico)
   criadaEm  DateTime  @default(now()) @map("criada_em")
 
-  // Estação: quem entra depende da escala. Pessoal: é sempre esta pessoa
+  /* Estação: estacaoId diz QUAL estação, e atendenteId aponta para o
+     "atendente" com o nome dela ("Estação 01"). É ele que aparece como
+     autor das mensagens e na auditoria. Pessoal: só o atendenteId */
   estacaoId   String?    @map("estacao_id")
   estacao     Estacao?   @relation(fields: [estacaoId], references: [id], onDelete: Cascade)
   atendenteId String?    @map("atendente_id")
   atendente   Atendente? @relation(fields: [atendenteId], references: [id], onDelete: Cascade)
 
   @@map("contas")
-}
-
-// Quem cobre cada turno em cada estação. Uma linha por (estação + turno):
-// a "chave" da tabela é a dupla, e não um id sozinho (@@id com dois campos)
-model Escala {
-  estacaoId   String  @map("estacao_id")
-  turno       Turno
-  atendenteId String? @map("atendente_id")
-
-  estacao   Estacao    @relation(fields: [estacaoId], references: [id], onDelete: Cascade)
-  atendente Atendente? @relation(fields: [atendenteId], references: [id], onDelete: SetNull)
-
-  @@id([estacaoId, turno])
-  @@map("escalas")
 }
 
 // ---------- Contatos, etiquetas e respostas rápidas ----------
@@ -341,7 +329,7 @@ model Auditoria {
   depois       String?
   mensagens    Json? // cópia da conversa excluída: [{ quem, quando, texto }]
   estacaoId    String?       @map("estacao_id")
-  turno        Turno?
+  turno        Turno? // em qual turno a estação estava (pelo horário do login)
 
   autorId String    @map("autor_id")
   autor   Atendente @relation(fields: [autorId], references: [id])

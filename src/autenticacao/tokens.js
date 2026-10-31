@@ -1,7 +1,7 @@
 /* O "CRACHÁ" DIGITAL (JWT, JSON Web Token).
 
    Depois do login, o servidor entrega um token: um texto com os dados da
-   sessão (quem é, de qual estação, qual turno) e uma ASSINATURA feita com
+   sessão (quem é e de qual estação) e uma ASSINATURA feita com
    uma chave secreta que só o servidor conhece (JWT_SEGREDO, no .env).
 
    O front guarda o token e o mostra a cada pedido. O servidor confere a
@@ -20,7 +20,7 @@ if (!SEGREDO || SEGREDO.length < 32) {
   throw new Error("Falta a variável JWT_SEGREDO no .env (com pelo menos 32 caracteres). Veja o .env.example.");
 }
 
-// 12 horas: cobre um turno inteiro com folga. Depois disso, login de novo
+// 12 horas: cobre um dia de trabalho com folga. Depois disso, login de novo
 const VALIDADE = "12h";
 
 export function criarToken(sessao) {

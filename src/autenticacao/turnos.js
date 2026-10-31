@@ -1,4 +1,10 @@
-/* Os 3 turnos do dia, os mesmos do front. "fim" é exclusivo: às 15:00 já é tarde */
+/* Os 3 turnos do dia (os horários da empresa), os mesmos do front.
+   "fim" é exclusivo: às 15:00 já é tarde.
+
+   O turno NÃO decide quem entra (quem entra é a estação). Ele só fica
+   REGISTRADO: o login das 15h17 é "Estação 01 · Tarde", e a supervisão
+   sabe de qual turno veio cada edição ou exclusão. Atrasos não
+   atrapalham: quem chega às 7h10 entra normalmente, já na manhã */
 export const TURNOS = [
   { id: "manha", nome: "Manhã", inicio: 7, fim: 15 },
   { id: "tarde", nome: "Tarde", inicio: 15, fim: 23 },
