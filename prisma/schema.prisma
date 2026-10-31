@@ -1,0 +1,349 @@
+// O "MAPA" DO BANCO DE DADOS.
+// Cada `model` vira uma TABELA. Cada linha dentro dele vira uma COLUNA.
+// Depois de mudar este arquivo, rode `npm run banco:migrar`: o Prisma
+// compara com o banco e cria/altera as tabelas sozinho (uma "migração").
+//
+// Convenção: no código usamos camelCase (atendenteId); no banco, nomes
+// em snake_case e no plural (tabela "conversas", coluna "atendente_id").
+// O @map e o @@map fazem essa "tradução".
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Listas de valores permitidos (enums) ----------
+// O banco RECUSA qualquer valor fora da lista: um status "resolvidaa"
+// (com erro de digitação) nunca chega a ser gravado.
+
+enum Papel {
+  atendente
+  supervisor
+  diretoria
+}
+
+enum TipoConversa {
+  contato
+  grupo
+}
+
+enum StatusConversa {
+  aberta
+  resolvida
+}
+
+enum TipoMensagem {
+  texto
+  audio
+  nota
+  sistema
+  arquivo // documento, foto... (o áudio gravado continua "audio")
+}
+
+enum Direcao {
+  recebida // do cliente para a empresa
+  enviada // da empresa para o cliente
+  interna // nota ou evento: só a equipe vê
+}
+
+// O turno em que a pessoa ENTROU (manhã 7h-15h, tarde 15h-23h, noite 23h-7h).
+// Só um registro: não decide quem entra (ver src/autenticacao/turnos.js)
+enum Turno {
+  manha
+  tarde
+  noite
+}
+
+// Conta de ESTAÇÃO (o login de uma estação) ou PESSOAL (supervisão, diretoria)
+enum TipoConta {
+  estacao
+  pessoal
+}
+
+enum TipoAuditoria {
+  edicao
+  exclusao
+  conversa
+}
+
+// ---------- A equipe ----------
+
+model Atendente {
+  id    String @id
+  nome  String
+  papel Papel  @default(atendente)
+
+  // Relações "ao contrário": não viram colunas, só deixam o Prisma
+  // navegar ("as conversas deste atendente")
+  conversas         Conversa[]
+  mensagens         Mensagem[]  @relation("autor")
+  mensagensApagadas Mensagem[]  @relation("apagadaPor")
+  registros         Auditoria[]
+  contas            Conta[]
+  puxadas           Puxada[]
+  arquivos          Arquivo[]
+
+  @@map("atendentes")
+}
+
+model Estacao {
+  id      String   @id
+  nome    String
+  sigla   String  @unique // "E01": a marca curta que aparece na lista de conversas
+  contas  Conta[]
+  linha   Linha? // o número de WhatsApp desta estação
+  puxadas Puxada[]
+
+  @@map("estacoes")
+}
+
+// ---------- Linhas (os números de WhatsApp) ----------
+// Cada número pertence a UMA estação OU a um papel (supervisão, diretoria).
+// Um campo preenchido, o outro vazio: as duas formas de ter dono
+
+model Linha {
+  id     String @id
+  numero String @unique // só dígitos, com o 55 do Brasil: "5521990000001"
+
+  // Linha de estação. @unique: uma estação tem no máximo UMA linha
+  estacaoId String?  @unique @map("estacao_id")
+  estacao   Estacao? @relation(fields: [estacaoId], references: [id], onDelete: SetNull)
+
+  // Linha exclusiva: "supervisor" ou "diretoria" (só quem tem esse papel vê)
+  papel Papel?
+
+  /* B7: o "ID do número de telefone" na Meta (phone_number_id).
+     Preenchido = a linha é um WhatsApp DE VERDADE: as mensagens entram e
+     saem pela API da Meta. Vazio = a linha funciona em modo simulado */
+  whatsappId String? @unique @map("whatsapp_id")
+
+  conversas Conversa[]
+
+  @@map("linhas")
+}
+
+/* Quem está PUXANDO qual estação (além da própria).
+   Uma linha por (pessoa + estação): a chave é a dupla */
+model Puxada {
+  atendenteId String   @map("atendente_id")
+  estacaoId   String   @map("estacao_id")
+  desde       DateTime @default(now())
+
+  atendente Atendente @relation(fields: [atendenteId], references: [id], onDelete: Cascade)
+  estacao   Estacao   @relation(fields: [estacaoId], references: [id], onDelete: Cascade)
+
+  @@id([atendenteId, estacaoId])
+  @@map("puxadas")
+}
+
+// ---------- Login ----------
+// A senha NUNCA é guardada: só o "hash" dela (a senha embaralhada pelo
+// bcrypt, de um jeito que não dá para desfazer). No login, o bcrypt
+// embaralha a senha digitada do mesmo jeito e compara os dois hashes
+
+model Conta {
+  id        String    @id @default(cuid()) // cuid(): o Prisma gera um id único sozinho
+  email     String    @unique
+  senhaHash String    @map("senha_hash")
+  tipo      TipoConta
+  ativa     Boolean   @default(true) // false = conta bloqueada (sem apagar o histórico)
+  criadaEm  DateTime  @default(now()) @map("criada_em")
+
+  /* Estação: estacaoId diz QUAL estação, e atendenteId aponta para o
+     "atendente" com o nome dela ("Estação 01"). É ele que aparece como
+     autor das mensagens e na auditoria. Pessoal: só o atendenteId */
+  estacaoId   String?    @map("estacao_id")
+  estacao     Estacao?   @relation(fields: [estacaoId], references: [id], onDelete: Cascade)
+  atendenteId String?    @map("atendente_id")
+  atendente   Atendente? @relation(fields: [atendenteId], references: [id], onDelete: Cascade)
+
+  @@map("contas")
+}
+
+// ---------- Contatos, etiquetas e respostas rápidas ----------
+
+model Contato {
+  id         String  @id
+  nome       String
+  numero     String  @unique // dois contatos nunca têm o mesmo número
+  email      String?
+  empresa    String?
+  observacao String?
+  salvo      Boolean @default(true) // false = número que escreveu mas não foi salvo
+  /* B7: o número como o WHATSAPP o conhece (o "wa_id" que chega da Meta).
+     No Brasil, ele às vezes vem SEM o 9 do celular ("552188110001"). Para
+     responder, usamos exatamente este, quando existe */
+  whatsapp   String?
+
+  conversas Conversa[]
+
+  @@map("contatos")
+}
+
+model Etiqueta {
+  id       String  @id
+  nome     String
+  cor      String
+  editavel Boolean @default(false) // as "Personalizadas" podem ser renomeadas
+
+  // Muitos-para-muitos: uma conversa tem várias etiquetas, e uma etiqueta
+  // está em várias conversas. O Prisma cria sozinho a tabela do meio
+  conversas Conversa[]
+
+  @@map("etiquetas")
+}
+
+model RespostaRapida {
+  atalho String @id
+  texto  String
+
+  @@map("respostas_rapidas")
+}
+
+// ---------- Conversas e mensagens ----------
+
+model Conversa {
+  id             String         @id
+  tipo           TipoConversa
+  status         StatusConversa @default(aberta)
+  arquivada      Boolean        @default(false)
+  marcadaNaoLida Boolean        @default(false) @map("marcada_nao_lida")
+  fixadaEm       DateTime?      @map("fixada_em")
+
+  // Por qual número de WhatsApp esta conversa acontece. O cliente sempre
+  // fala com o MESMO número, então a resposta sai sempre por esta linha
+  linhaId String @map("linha_id")
+  linha   Linha  @relation(fields: [linhaId], references: [id])
+
+  // Conversa com contato: aponta para o contato
+  contatoId String?  @map("contato_id")
+  contato   Contato? @relation(fields: [contatoId], references: [id])
+
+  // Grupo: nome e participantes ficam na própria conversa
+  nomeGrupo     String?  @map("nome_grupo")
+  participantes String[] // lista de textos (o Postgres guarda listas!)
+
+  // Quem está atendendo (null = na fila)
+  atendenteId String?    @map("atendente_id")
+  atendente   Atendente? @relation(fields: [atendenteId], references: [id], onDelete: SetNull)
+
+  etiquetas Etiqueta[]
+  mensagens Mensagem[]
+
+  // Índice: a busca mais comum é "as conversas destas linhas"
+  @@index([linhaId])
+  @@map("conversas")
+}
+
+model Mensagem {
+  id          String       @id
+  tipo        TipoMensagem
+  direcao     Direcao
+  horario     DateTime
+  lida        Boolean      @default(false)
+  texto       String?
+  audioUrl    String?      @map("audio_url") // ⚠️ antigo (B5): o áudio inteiro em texto. Os novos usam arquivoId
+  duracao     Int? // segundos de áudio
+  encaminhada Boolean      @default(false)
+
+  /* B7: o id da mensagem no WhatsApp ("wamid.HBgN..."). É por ele que a
+     Meta avisa "foi lida", e é ele que vai na citação de uma resposta.
+     @unique: a Meta às vezes manda o mesmo aviso duas vezes; com o id
+     único, a mesma mensagem nunca entra repetida */
+  whatsappId String? @unique @map("whatsapp_id")
+  // O WhatsApp recusou a entrega (número inválido, cliente bloqueou...): o motivo
+  erroEnvio  String? @map("erro_envio")
+
+  // O arquivo anexado (documento, foto ou o áudio gravado). Várias
+  // mensagens podem apontar para o MESMO arquivo: é o que acontece ao encaminhar
+  arquivoId String?  @map("arquivo_id")
+  arquivo   Arquivo? @relation(fields: [arquivoId], references: [id], onDelete: SetNull)
+
+  // A conversa dona da mensagem. onDelete: Cascade = apagou a conversa,
+  // as mensagens dela vão junto (a cópia fica guardada na auditoria)
+  conversaId String   @map("conversa_id")
+  conversa   Conversa @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+
+  // Quem escreveu: um atendente (enviadas e notas) OU o nome de um
+  // participante do grupo (recebidas). Em conversa com contato, os dois ficam vazios
+  autorId   String?    @map("autor_id")
+  autor     Atendente? @relation("autor", fields: [autorId], references: [id], onDelete: SetNull)
+  autorNome String?    @map("autor_nome")
+
+  // Resposta: aponta para OUTRA mensagem da mesma tabela (relação consigo mesma)
+  respostaAId String?    @map("resposta_a_id")
+  respostaA   Mensagem?  @relation("respostas", fields: [respostaAId], references: [id], onDelete: SetNull)
+  respostas   Mensagem[] @relation("respostas")
+
+  // Edição: o texto anterior não se perde
+  editadaEm         DateTime? @map("editada_em")
+  versoesAnteriores String[]  @map("versoes_anteriores")
+
+  // Exclusão "suave" (soft delete): a mensagem continua aqui, só marcada
+  apagada      Boolean    @default(false)
+  apagadaEm    DateTime?  @map("apagada_em")
+  apagadaPorId String?    @map("apagada_por_id")
+  apagadaPor   Atendente? @relation("apagadaPor", fields: [apagadaPorId], references: [id], onDelete: SetNull)
+
+  // Índice: deixa rápida a busca "todas as mensagens desta conversa, por horário"
+  @@index([conversaId, horario])
+  @@map("mensagens")
+}
+
+// ---------- Arquivos ----------
+// O CONTEÚDO do arquivo fica numa pasta do servidor (veja src/arquivos/disco.js).
+// Aqui no banco ficam só os dados SOBRE ele: nome, tipo, tamanho, quem enviou
+
+model Arquivo {
+  id       String   @id // também é o nome do arquivo na pasta
+  nome     String // o nome original: "orcamento.pdf"
+  tipo     String // o tipo (MIME): "application/pdf", "image/png", "audio/webm"
+  tamanho  Int // em bytes
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  enviadoPorId String?    @map("enviado_por_id")
+  enviadoPor   Atendente? @relation(fields: [enviadoPorId], references: [id], onDelete: SetNull)
+
+  mensagens Mensagem[]
+
+  @@map("arquivos")
+}
+
+// ---------- Auditoria (supervisão) ----------
+// Sem relação com Conversa DE PROPÓSITO: o registro precisa sobreviver
+// mesmo depois que a conversa é excluída. Por isso guardamos o nome junto
+
+model Auditoria {
+  id           String        @id
+  tipo         TipoAuditoria
+  quando       DateTime
+  conversaId   String        @map("conversa_id")
+  conversaNome String        @map("conversa_nome")
+  mensagemId   String?       @map("mensagem_id")
+  tipoMensagem TipoMensagem? @map("tipo_mensagem")
+  antes        String?
+  depois       String?
+  mensagens    Json? // cópia da conversa excluída: [{ quem, quando, texto }]
+  estacaoId    String?       @map("estacao_id")
+  turno        Turno? // em qual turno a estação estava (pelo horário do login)
+
+  autorId String    @map("autor_id")
+  autor   Atendente @relation(fields: [autorId], references: [id])
+
+  @@index([quando])
+  @@map("auditoria")
+}
+
+// ---------- Configurações da empresa ----------
+// Uma linha só (id sempre 1): o nome da marca (white-label)
+
+model Configuracao {
+  id        Int    @id @default(1)
+  nomeMarca String @default("Talk Atendimento") @map("nome_marca")
+
+  @@map("configuracoes")
+}
