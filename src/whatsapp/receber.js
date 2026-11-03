@@ -186,13 +186,16 @@ async function atualizarStatus(status) {
   if (!mensagem) return; // uma mensagem que não saiu daqui (ex.: enviada pelo celular)
 
   if (status.status === "read" && !mensagem.lida) {
-    await prisma.mensagem.update({ where: { id: mensagem.id }, data: { lida: true } });
+    // Lida também é entregue: às vezes o "read" chega antes do "delivered"
+    await prisma.mensagem.update({ where: { id: mensagem.id }, data: { lida: true, entregue: true } });
+  } else if (status.status === "delivered" && !mensagem.entregue) {
+    await prisma.mensagem.update({ where: { id: mensagem.id }, data: { entregue: true } });
   } else if (status.status === "failed") {
     const erro = status.errors?.[0];
     const motivo = erro?.error_data?.details || erro?.title || erro?.message || "o WhatsApp não entregou";
     await prisma.mensagem.update({ where: { id: mensagem.id }, data: { erroEnvio: motivo.slice(0, 300) } });
   } else {
-    return; // "sent" e "delivered": por enquanto, nada muda na tela
+    return; // "sent" (✓, que a tela já mostra) ou um aviso repetido: nada muda
   }
   avisarConversa(mensagem.conversaId);
 }

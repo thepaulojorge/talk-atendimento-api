@@ -111,6 +111,9 @@ rotasMensagens.post("/conversas/:id/mensagens", exigirLogin, async (req, res) =>
         horario: new Date(agora),
         direcao: ehNota ? "interna" : "enviada",
         lida: ehNota, // nota: ninguém "lê" do outro lado
+        /* Saiu pelo WhatsApp? Fica com ✓ até a Meta avisar "delivered" (✓✓).
+           Linha de exemplo, sem WhatsApp: já conta como entregue */
+        entregue: !whatsappId,
         autorId: req.usuario.atendenteId,
         respostaAId: citada?.id ?? null,
         encaminhada: encaminhada === true,

@@ -180,6 +180,7 @@ export async function popularComExemplos(prisma, log = () => {}) {
         direcao: m.direcao,
         horario: data(m.horario),
         lida: Boolean(m.lida),
+        entregue: m.entregue ?? true, // só "false" quando o exemplo quer mostrar o ✓ sozinho
         texto: m.texto ?? null,
         audioUrl: m.audioUrl ?? null,
         duracao: m.duracao ?? null,

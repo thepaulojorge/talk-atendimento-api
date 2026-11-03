@@ -56,6 +56,7 @@ export function mensagemParaFront(m, { supervisao = false } = {}) {
     horario: iso(m.horario),
     direcao: m.direcao,
     lida: m.lida,
+    entregue: m.entregue,
     // No front, "autor" é um campo só: id do atendente OU nome do participante
     autor: m.autorId ?? m.autorNome ?? null,
     respostaA: m.respostaAId,

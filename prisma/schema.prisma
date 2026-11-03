@@ -245,6 +245,14 @@ model Mensagem {
   direcao     Direcao
   horario     DateTime
   lida        Boolean      @default(false)
+  /* Os RISQUINHOS de uma mensagem nossa, como no WhatsApp:
+     ✓  saiu daqui, mas ainda não chegou no celular do cliente (entregue = false)
+     ✓✓ chegou no celular (entregue = true), cinza enquanto não foi lida
+     ✓✓ azul: o cliente leu (lida = true)
+     O padrão é true: as mensagens que já existiam e as das linhas de
+     exemplo (sem WhatsApp) contam como entregues. Só as que saem pelo
+     WhatsApp de verdade nascem com false e esperam o aviso da Meta */
+  entregue    Boolean      @default(true)
   texto       String?
   audioUrl    String?      @map("audio_url") // ⚠️ antigo (B5): o áudio inteiro em texto. Os novos usam arquivoId
   duracao     Int? // segundos de áudio
